@@ -35,27 +35,31 @@ function prod(l1, l2) {
 // n = # lambdas, k = # free atomic vars, e = # free normal vars
 function c_atom(n, k, e) {
   if (n < 0) return [];
-
+  if (k == 0) e = false;
 
   if (n == 0 && k == 1 && !e) {
 	 return [["var"]];
   }
   var rv = cc_normal(n - 1, k + 1, e).map(function(x) { return ["lam", x] });
+
   for (var a = 0; a <= n; a++) {
 	 for (var b = 0; b <= k; b++) {
 
 		if (a == 0 && b == 0) continue;
 		if (a == n && b == k) continue;
-		  rv = rv.concat( prod(cc_normal(a, b, e), cc_atom(n - a, k - b, false)) );
+		var ex = prod(cc_normal(a, b, e), cc_atom(n - a, k - b, b == 0 ? e : false));
+
+		rv = rv.concat( ex );
 
 	 }
   }
+
   return rv;
 }
 
 function c_normal(n, k, e) {
   if (n < 0) return [];
-
+  if (k == 0) e = false;
 
   if (n == 0 && k == 1 && e) {
 	 return [["var"]];
@@ -66,7 +70,7 @@ function c_normal(n, k, e) {
 
 		if (a == 0 && b == 0) continue;
 		if (a == n && b == k) continue;
-		  rv = rv.concat( prod(cc_atom(a, b, e), cc_atom(n - a, k - b, false)) );
+		rv = rv.concat( prod(cc_atom(a, b, e), cc_atom(n - a, k - b, b == 0 ? e :  false)) );
 
 	 }
   }
@@ -77,8 +81,9 @@ function c_struct(n, k) {
   if (n < 0) return [];
   if (k < 0) return [];
 
+    var nn = n-1;
+  var rv = cc_normal(nn, k+1 , true).map(function(x) { return ["lam", x] });
 
-  var rv = cc_normal(n - 1, k , true).map(function(x) { return ["lam", x] });
 
   for (var a = 0; a <= n; a++) {
 	 for (var b = 0; b <= k; b++) {
@@ -92,9 +97,9 @@ function c_struct(n, k) {
 }
 
 function string(x) {
-  if (x[0] == "var") return "*"
-  if (x[0] == "lam") return "/" + string(x[1])
-  if (x[0] == "app") return "(" + string(x[1]) + "@" + string(x[2]) + ")"
+  if (x[0] == "var") return "x"
+  if (x[0] == "lam") return "(/" + string(x[1]) + ")"
+  if (x[0] == "app") return "(" + string(x[1]) + " " + string(x[2]) + ")"
 }
 
 function consec(x, lam) {
@@ -110,8 +115,15 @@ function ids(x) {
 }
 
 
-subj = cc_normal(4,0,0);
-subj.forEach(function(x) {
-  console.log(string(x));
-});
-console.log(subj.length);
+//console.log(cc_normal(1,0,false).map(string));
+ //console.log(cc_struct(3,0).length);
+
+
+for(var i = 0; i < 7; i++) {
+  console.log(cc_struct(i,0).length);
+}
+
+// subj.forEach(function(x) {
+//   console.log(string(x));
+// });
+// console.log(subj.length);
