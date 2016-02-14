@@ -140,83 +140,58 @@ function c_struct(n, k) {
   return rv;
 }
 
-function string(x) {
-  if (x.type == "var") return "x"
-  if (x.type == "lam") return "/" + string(x.B);
-
-  if (x.type == "app") {
-	 var head = x.L.type == "lam" ? "(" + string(x.L) + ")" : string(x.L);
-	 var arg = x.R.type == "var" ? string(x.R) : "(" + string(x.R) + ")" ;
-	 return head + " " + arg
-  }
+function string(s) {
+  return traverse(s, {
+	 vor: function(x) { return "x" },
+	 lam: function(B, x) { return "/" + B; },
+	 app: function(L, R, x) {
+		var head = x.L.type == "lam" ? "(" + L + ")" : L;
+		var arg = x.R.type == "var" ? R : "(" + R + ")" ;
+		return head + " " + arg
+	 }});
 }
 
-function estring(x) {
-  if (x.type == "var") return "x"
-  if (x.type == "lam") {
-	 var bind = "/";
-	 if (x.subtype == "edge") {
-		bind = "!";
-	 }
-	 return bind + estring(x.B)
-  }
-  if (x.type == "app") {
-	 var app = " ";
-	 if (x.subtype == "edge") { app = "*" }
-	 var head = x.L.type == "lam" ? "(" + estring(x.L) + ")" : estring(x.L);
-	 var arg = x.R.type == "var" ? estring(x.R) : "(" + estring(x.R) + ")" ;
-	 return head + app + arg
-  }
-}
-
-function nstring(x) {
-  if (x.type == "var") return "x"
-  if (x.type == "lam") {
-	 var bind = "/";
-	 if (x.B.subtype == "atom") {
-		bind = "!";
-	 }
-	 return bind + nstring(x.B)
-  }
-  if (x.type == "app") {
-	 var app = " ";
-	 if (x.R.subtype == "atom") { app = "*" }
-	 var head = x.L.type == "lam" ? "(" + estring(x.L) + ")" : nstring(x.L);
-	 var arg = x.R.type == "var" ? nstring(x.R) : "(" + nstring(x.R) + ")" ;
-	 return head + app + arg
-  }
+function estring(s) {
+  return traverse(s, {
+	 vor: function(x) { return "x" },
+	 lam: function(B, x) {
+		var bind = "/";
+		if (x.subtype == "edge") bind = "!";
+		return bind + B;
+	 },
+	 app: function(L, R, x) {
+		var app = " ";
+		if (x.subtype == "edge") app = "*";
+		var head = x.L.type == "lam" ? "(" + L + ")" : L;
+		var arg = x.R.type == "var" ? R : "(" + R + ")" ;
+		return head + app + arg
+	 }});
 }
 
 
-function consec(x, lam) {
-  if (x.type == "var") return 0;
-  if (x.type == "lam") return (lam ? 1 : 0) + consec(x.B, true);
-  if (x.type == "app") return consec(x.L, false) + consec(x.R, false);
+function traverse(s, f) {
+  if (s.type == "var") { return f.vor(s); }
+  if (s.type == "lam") { return f.lam(traverse(s.B, f), s) }
+  if (s.type == "app") { return f.app(traverse(s.L, f), traverse(s.R, f), s); }
 }
 
-function ids(x) {
-  if (x.type == "var") return 0;
-  if (x.type == "lam")  return x.B.type == "var" ? 1 : ids(x.B);
-  if (x.type == "app") return ids(x.L) + ids(x.R);
+function nstring(s) {
+  return traverse(s, {
+	 vor: function(x) { return "x" },
+	 lam: function(B, x) {
+		var bind = "/";
+		if (x.B.subtype == "atom") bind = "!";
+		return bind + B;
+	 },
+	 app: function(L, R, x) {
+		var app = " ";
+		if (x.R.subtype == "atom") app = "*";
+		var head = x.L.type == "lam" ? "(" + L + ")" : L;
+		var arg = x.R.type == "var" ? R : "(" + R + ")" ;
+		return head + app + arg
+	 }});
 }
 
-function graphviz(prefix, x) {
-  var rv = "";
-  if (x.type == "lam") {
-	 rv += graphviz("B" + prefix, x.B);
-	 rv += prefix + " -> B" + prefix + "\n";
-	 rv += prefix + "[color=\"0.4 0.8 0\"]\n";
-  }
-  if (x.type == "app") {
-	 rv += graphviz("L" + prefix, x.L);
-	 rv += graphviz("R" + prefix, x.R);
-	 rv += prefix + " -> L" + prefix + "\n";
-	 rv += prefix + " -> R" + prefix + "\n";
-	 rv += prefix + "[color=\"0.4 0.8 0.6\"]\n";
-  }
-
-  return rv;
-}
 
 function census(s) {
   var a = 0, b = 0;
@@ -228,26 +203,19 @@ function census(s) {
   return a + "," + b;
 }
 
-function graphviz_list(x) {
-  var rv = "digraph { \n";
-  rv += "ranksep=0.2\n";
-  rv += "node[nodesep=0.1,shape=circle,label=\"\",style=filled,color=\"0 0.5 0.8\",fixedsize=shape,width=0.1,height=0.1];\n"
-  rv += "edge[penwidth=3,arrowsize=0,nodesep=0.1,color=\"0.7 0.1 0.9\"]\n";
-  for(var i = 0; i < x.length; i++) {
-	 rv += "subgraph{\n";
-	 rv += graphviz(i, x[i]);
-	 rv += "}\n";
+
+function tally(es) {
+  var counts = {};
+  for(var i = 0; i < es.length; i++) {
+	 counts[es[i]] = 1 + (counts[es[i]] || 0);
   }
-  rv += "}\n";
-  return rv;
+  return counts;
 }
-//console.log(cc_vert(2,1,false).map(string));
-//console.log(cc_norm(3,0).map(string));
 
+var t1 = cc_edge(3, 0).map(string);
+//var t1 = tally(cc_norm(4, 0).map(nstring2).map(census));
+console.log(t1);
 
-var t1 = cc_norm(7, 0).map(nstring).map(census).sort().join("-");
-var t2 = cc_edge(7, 0).map(estring).map(census).sort().join("-");
-console.log(t1 == t2);
 
 // for(var i = 0; i < 7; i++) {
 //   console.log(cc_edge(i,2,false).length);
