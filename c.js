@@ -157,14 +157,46 @@ function ids(x) {
   if (x[0] == "app") return ids(x[1]) + ids(x[2]);
 }
 
+function graphviz(prefix, x) {
+  var rv = "";
+  if (x[0] == "lam") {
+	 rv += graphviz("B" + prefix, x[1]);
+	 rv += prefix + " -> B" + prefix + "\n";
+	 rv += prefix + "[color=\"0.4 0.8 0\"]\n";
+  }
+  if (x[0] == "app") {
+	 rv += graphviz("L" + prefix, x[1]);
+	 rv += graphviz("R" + prefix, x[2]);
+	 rv += prefix + " -> L" + prefix + "\n";
+	 rv += prefix + " -> R" + prefix + "\n";
+	 rv += prefix + "[color=\"0.4 0.8 0.6\"]\n";
+  }
 
-//console.log(cc_edge(1,0,false).map(string));
-//console.log(cc_vert(3,1).map(string));
-
-
-for(var i = 0; i < 7; i++) {
-  console.log(cc_norm(i,0).length);
+  return rv;
 }
+
+function graphviz_list(x) {
+  var rv = "digraph { \n";
+  rv += "ranksep=0.2\n";
+  rv += "node[nodesep=0.1,shape=circle,label=\"\",style=filled,color=\"0 0.5 0.8\",fixedsize=shape,width=0.1,height=0.1];\n"
+  rv += "edge[penwidth=3,arrowsize=0,nodesep=0.1,color=\"0.7 0.1 0.9\"]\n";
+  for(var i = 0; i < x.length; i++) {
+	 rv += "subgraph{\n";
+	 rv += graphviz(i, x[i]);
+	 rv += "}\n";
+  }
+  rv += "}\n";
+  return rv;
+}
+//console.log(cc_vert(2,1,false).map(string));
+//console.log(cc_norm(3,0).map(string));
+
+
+console.log(graphviz_list(cc_norm(3, 0)));
+
+// for(var i = 0; i < 7; i++) {
+//   console.log(cc_edge(i,2,false).length);
+// }
 
 // subj.forEach(function(x) {
 //   console.log(string(x));
