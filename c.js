@@ -50,7 +50,7 @@ function c_atom(n, k) {
   if (n < 0) return [];
 
   if (n == 0 && k == 1) {
-	 return [{type: "var"}];
+	 return [{type: "var", subtype: "atom"}];
   }
   var rv = [];
   for (var a = 0; a <= n; a++) {
@@ -58,7 +58,7 @@ function c_atom(n, k) {
 
 		if (a == 0 && b == 0) continue;
 		if (a == n && b == k) continue;
-		var ex = prod(cc_atom(a, b), cc_norm(n - a, k - b));
+		var ex = prod(cc_atom(a, b), cc_norm(n - a, k - b)).map(function(x) { x.subtype = "atom"; return x;});
 		rv = rv.concat( ex );
 	 }
   }
@@ -105,15 +105,16 @@ function c_edge(n, k, e) {
   if (k == 0) e = false;
 
   if (n == 0 && k == 1 && e) {
-	 return [{type: "var"}];
+	 return [{type: "var", subtype: "edge"}];
   }
-  var rv = cc_vert(n - 1, k + 1, e).map(function(x) { return {type: "lam", B:x} });
+  var rv = cc_vert(n - 1, k + 1, e).map(function(x) { return {type: "lam", subtype: "edge", B:x} });
   for (var a = 0; a <= n; a++) {
 	 for (var b = 0; b <= k; b++) {
 
 		if (a == 0 && b == 0) continue;
 		if (a == n && b == k) continue;
-		rv = rv.concat( prod(cc_vert(a, b, e), cc_vert(n - a, k - b, b == 0 ? e :  false)) );
+		rv = rv.concat( prod(cc_vert(a, b, e), cc_vert(n - a, k - b, b == 0 ? e :  false)) )
+		  .map(function(x) { x.subtype = "edge"; return x});
 
 	 }
   }
@@ -141,13 +142,51 @@ function c_struct(n, k) {
 
 function string(x) {
   if (x.type == "var") return "x"
-  if (x.type == "lam") return "/" + string(x.B)
+  if (x.type == "lam") return "/" + string(x.B);
+
   if (x.type == "app") {
 	 var head = x.L.type == "lam" ? "(" + string(x.L) + ")" : string(x.L);
 	 var arg = x.R.type == "var" ? string(x.R) : "(" + string(x.R) + ")" ;
-	 return head +  arg
+	 return head + " " + arg
   }
 }
+
+function estring(x) {
+  if (x.type == "var") return "x"
+  if (x.type == "lam") {
+	 var bind = "/";
+	 if (x.subtype == "edge") {
+		bind = "!";
+	 }
+	 return bind + estring(x.B)
+  }
+  if (x.type == "app") {
+	 var app = " ";
+	 if (x.subtype == "edge") { app = "*" }
+	 var head = x.L.type == "lam" ? "(" + estring(x.L) + ")" : estring(x.L);
+	 var arg = x.R.type == "var" ? estring(x.R) : "(" + estring(x.R) + ")" ;
+	 return head + app + arg
+  }
+}
+
+function nstring(x) {
+  if (x.type == "var") return "x"
+  if (x.type == "lam") {
+	 var bind = "/";
+	 if (x.B.subtype == "atom") {
+		bind = "!";
+	 }
+	 return bind + nstring(x.B)
+  }
+  if (x.type == "app") {
+	 var app = " ";
+	 if (x.R.subtype == "atom") { app = "*" }
+	 var head = x.L.type == "lam" ? "(" + estring(x.L) + ")" : nstring(x.L);
+	 var arg = x.R.type == "var" ? nstring(x.R) : "(" + nstring(x.R) + ")" ;
+	 return head + app + arg
+  }
+}
+
 
 function consec(x, lam) {
   if (x.type == "var") return 0;
@@ -179,6 +218,16 @@ function graphviz(prefix, x) {
   return rv;
 }
 
+function census(s) {
+  var a = 0, b = 0;
+  for (var i = 0; i < s.length; i++) {
+	 var x = s[i];
+	 if (x == "/") a++;
+	 if (x == "!") b++;
+  }
+  return a + "," + b;
+}
+
 function graphviz_list(x) {
   var rv = "digraph { \n";
   rv += "ranksep=0.2\n";
@@ -196,8 +245,9 @@ function graphviz_list(x) {
 //console.log(cc_norm(3,0).map(string));
 
 
-console.log(cc_norm(4, 0).map(string).length);
-console.log(cc_edge(4, 0).map(string));
+var t1 = cc_norm(7, 0).map(nstring).map(census).sort().join("-");
+var t2 = cc_edge(7, 0).map(estring).map(census).sort().join("-");
+console.log(t1 == t2);
 
 // for(var i = 0; i < 7; i++) {
 //   console.log(cc_edge(i,2,false).length);
