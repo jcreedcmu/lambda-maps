@@ -37,7 +37,7 @@ function prod(l1, l2) {
   rv = [];
   l1.forEach(function (x1) {
 	 l2.forEach(function (x2) {
-		rv.push(["app", x1, x2]);
+		rv.push({type: "app", L: x1, R: x2});
 	 });
   });
   return rv;
@@ -50,7 +50,7 @@ function c_atom(n, k) {
   if (n < 0) return [];
 
   if (n == 0 && k == 1) {
-	 return [["var"]];
+	 return [{type: "var"}];
   }
   var rv = [];
   for (var a = 0; a <= n; a++) {
@@ -70,7 +70,7 @@ function c_atom(n, k) {
 function c_norm(n, k) {
   if (n < 0) return [];
 
-  return cc_atom(n,k).concat(cc_norm(n-1, k+1 , true).map(function(x) { return ["lam", x] }));
+  return cc_atom(n,k).concat(cc_norm(n-1, k+1 , true).map(function(x) { return {type: "lam", B: x} }));
 
 }
 
@@ -81,9 +81,9 @@ function c_vert(n, k, e) {
   if (k == 0) e = false;
 
   if (n == 0 && k == 1 && !e) {
-	 return [["var"]];
+	 return [{type: "var"}];
   }
-  var rv = cc_edge(n - 1, k + 1, e).map(function(x) { return ["lam", x] });
+  var rv = cc_edge(n - 1, k + 1, e).map(function(x) { return {type: "lam", B: x} });
 
   for (var a = 0; a <= n; a++) {
 	 for (var b = 0; b <= k; b++) {
@@ -105,9 +105,9 @@ function c_edge(n, k, e) {
   if (k == 0) e = false;
 
   if (n == 0 && k == 1 && e) {
-	 return [["var"]];
+	 return [{type: "var"}];
   }
-  var rv = cc_vert(n - 1, k + 1, e).map(function(x) { return ["lam", x] });
+  var rv = cc_vert(n - 1, k + 1, e).map(function(x) { return {type: "lam", B:x} });
   for (var a = 0; a <= n; a++) {
 	 for (var b = 0; b <= k; b++) {
 
@@ -125,7 +125,7 @@ function c_struct(n, k) {
   if (k < 0) return [];
 
   var nn = n-1;
-  var rv = cc_edge(nn, k+1 , true).map(function(x) { return ["lam", x] });
+  var rv = cc_edge(nn, k+1 , true).map(function(x) { return {type: "lam", B:x} });
 
 
   for (var a = 0; a <= n; a++) {
@@ -140,33 +140,33 @@ function c_struct(n, k) {
 }
 
 function string(x) {
-  if (x[0] == "var") return "x"
-  if (x[0] == "lam") return "(/" + string(x[1]) + ")"
-  if (x[0] == "app") return "(" + string(x[1]) + " " + string(x[2]) + ")"
+  if (x.type == "var") return "x"
+  if (x.type == "lam") return "(/" + string(x.B) + ")"
+  if (x.type == "app") return "(" + string(x.L) + " " + string(x.R) + ")"
 }
 
 function consec(x, lam) {
-  if (x[0] == "var") return 0;
-  if (x[0] == "lam") return (lam ? 1 : 0) + consec(x[1], true);
-  if (x[0] == "app") return consec(x[1], false) + consec(x[2], false);
+  if (x.type == "var") return 0;
+  if (x.type == "lam") return (lam ? 1 : 0) + consec(x.B, true);
+  if (x.type == "app") return consec(x.L, false) + consec(x.R, false);
 }
 
 function ids(x) {
-  if (x[0] == "var") return 0;
-  if (x[0] == "lam")  return x[1][0] == "var" ? 1 : ids(x[1]);
-  if (x[0] == "app") return ids(x[1]) + ids(x[2]);
+  if (x.type == "var") return 0;
+  if (x.type == "lam")  return x.B.type == "var" ? 1 : ids(x.B);
+  if (x.type == "app") return ids(x.L) + ids(x.R);
 }
 
 function graphviz(prefix, x) {
   var rv = "";
-  if (x[0] == "lam") {
-	 rv += graphviz("B" + prefix, x[1]);
+  if (x.type == "lam") {
+	 rv += graphviz("B" + prefix, x.B);
 	 rv += prefix + " -> B" + prefix + "\n";
 	 rv += prefix + "[color=\"0.4 0.8 0\"]\n";
   }
-  if (x[0] == "app") {
-	 rv += graphviz("L" + prefix, x[1]);
-	 rv += graphviz("R" + prefix, x[2]);
+  if (x.type == "app") {
+	 rv += graphviz("L" + prefix, x.L);
+	 rv += graphviz("R" + prefix, x.R);
 	 rv += prefix + " -> L" + prefix + "\n";
 	 rv += prefix + " -> R" + prefix + "\n";
 	 rv += prefix + "[color=\"0.4 0.8 0.6\"]\n";
@@ -192,7 +192,8 @@ function graphviz_list(x) {
 //console.log(cc_norm(3,0).map(string));
 
 
-console.log(graphviz_list(cc_norm(3, 0)));
+console.log(cc_norm(4, 0).map(string).length);
+console.log(cc_edge(4, 0).map(string).length);
 
 // for(var i = 0; i < 7; i++) {
 //   console.log(cc_edge(i,2,false).length);
