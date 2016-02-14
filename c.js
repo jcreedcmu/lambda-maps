@@ -141,8 +141,12 @@ function c_struct(n, k) {
 
 function string(x) {
   if (x.type == "var") return "x"
-  if (x.type == "lam") return "(/" + string(x.B) + ")"
-  if (x.type == "app") return "(" + string(x.L) + " " + string(x.R) + ")"
+  if (x.type == "lam") return "/" + string(x.B)
+  if (x.type == "app") {
+	 var head = x.L.type == "lam" ? "(" + string(x.L) + ")" : string(x.L);
+	 var arg = x.R.type == "var" ? string(x.R) : "(" + string(x.R) + ")" ;
+	 return head +  arg
+  }
 }
 
 function consec(x, lam) {
@@ -193,7 +197,7 @@ function graphviz_list(x) {
 
 
 console.log(cc_norm(4, 0).map(string).length);
-console.log(cc_edge(4, 0).map(string).length);
+console.log(cc_edge(4, 0).map(string));
 
 // for(var i = 0; i < 7; i++) {
 //   console.log(cc_edge(i,2,false).length);
