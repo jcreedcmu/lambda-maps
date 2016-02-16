@@ -43,7 +43,6 @@ function prod(l1, l2) {
   return rv;
 }
 
-
 // atomic terms
 // n = # lambdas, k = # free vars
 function c_atom(n, k) {
@@ -140,6 +139,9 @@ function c_struct(n, k) {
   return rv;
 }
 
+
+
+
 function string(s) {
   return traverse(s, {
 	 vor: function(x) { return "x" },
@@ -212,7 +214,19 @@ function tally(es) {
   return counts;
 }
 
-var t1 = cc_edge(3, 0).map(string);
+function viol(s) {
+  return traverse(s, {
+	 vor: function(x) { return false; },
+	 lam: function(B, x) {
+		return B || (x.subtype != "edge" && x.B.type == "lam" && x.B.subtype == "edge");
+	 },
+	 app: function(L, R, x) {
+		return L || R;
+	 },
+  });
+}
+
+var t1 = cc_edge(4, 0).map(function(x) { if (viol(x)) return estring(x);});
 //var t1 = tally(cc_norm(4, 0).map(nstring2).map(census));
 console.log(t1);
 
