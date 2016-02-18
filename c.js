@@ -139,7 +139,29 @@ function c_struct(n, k) {
   return rv;
 }
 
+var trif = {};
 
+function gen(thisname, varname, leftf, rightf) {
+  return function (n, G) {
+	 if (n < 0) return [];
+	 if (n == 0 && G == thisname)
+		return [{type: "var"}];
+	 var rv = trif[leftf](n-1, G+varname).map(function(x) { return {type: "lam", B:x} });
+	 for (var a = 0; a <= n; a++) {
+		for (var b = 0; b <= G.length; b++) {
+		  if (a == 0 && b == 0) continue;
+		  if (a == n && b == G.length) continue;
+		  rv = rv.concat(prod(trif[leftf](a, G.substring(0,b)),
+									 trif[rightf](n - a, G.substring(b,G.length))));
+		}
+
+	 }
+	 return rv;
+  }
+}
+trif["v"] = memoize2(gen("v", "s", "e", "v"));
+trif["e"] = memoize2(gen("e", "v", "v", "s"));
+trif["s"] = memoize2(gen("s", "e", "s", "e"));
 
 
 function string(s) {
@@ -226,9 +248,10 @@ function viol(s) {
   });
 }
 
-var t1 = cc_edge(4, 0).map(function(x) { if (viol(x)) return estring(x);});
+
+console.log(trif["e"](6, "").length, cc_norm(6, 0).length);
 //var t1 = tally(cc_norm(4, 0).map(nstring2).map(census));
-console.log(t1);
+
 
 
 // for(var i = 0; i < 7; i++) {
