@@ -139,29 +139,59 @@ function c_struct(n, k) {
   return rv;
 }
 
-var trif = {};
+function gen_trif() {
+  var trif = {};
 
-function gen(thisname, varname, leftf, rightf) {
-  return function (n, G) {
-	 if (n < 0) return [];
-	 if (n == 0 && G == thisname)
-		return [{type: "var"}];
-	 var rv = trif[leftf](n-1, G+varname).map(function(x) { return {type: "lam", B:x} });
-	 for (var a = 0; a <= n; a++) {
-		for (var b = 0; b <= G.length; b++) {
-		  if (a == 0 && b == 0) continue;
-		  if (a == n && b == G.length) continue;
-		  rv = rv.concat(prod(trif[leftf](a, G.substring(0,b)),
-									 trif[rightf](n - a, G.substring(b,G.length))));
+  function gen(thisname, varname, leftf, rightf) {
+	 return function (n, G) {
+		if (n < 0) return [];
+		if (n == 0 && G == thisname)
+		  return [{type: "var"}];
+		var rv = trif[leftf](n-1, G+varname).map(function(x) { return {type: "lam", B:x} });
+		for (var a = 0; a <= n; a++) {
+		  for (var b = 0; b <= G.length; b++) {
+			 if (a == 0 && b == 0) continue;
+			 if (a == n && b == G.length) continue;
+			 rv = rv.concat(prod(trif[leftf](a, G.substring(0,b)),
+										trif[rightf](n - a, G.substring(b,G.length))));
+		  }
+
 		}
-
+		return rv;
 	 }
-	 return rv;
   }
+  trif["v"] = memoize2(gen("v", "s", "e", "v"));
+  trif["e"] = memoize2(gen("e", "v", "v", "s"));
+  trif["s"] = memoize2(gen("s", "e", "s", "e"));
+  return trif;
 }
-trif["v"] = memoize2(gen("v", "s", "e", "v"));
-trif["e"] = memoize2(gen("e", "v", "v", "s"));
-trif["s"] = memoize2(gen("s", "e", "s", "e"));
+
+function gen_bif() {
+  var bif = {};
+
+  function gen(thisname, varname, body, leftf, rightf) {
+	 return function (n, G) {
+		if (n < 0) return [];
+		if (n == 0 && G == thisname)
+		  return [{type: "var"}];
+		var rv = bif[body](n-1, varname(G)).map(function(x) { return {type: "lam", B:x} });
+		if (leftf != null) {
+		  for (var a = 0; a <= n; a++) {
+			 for (var b = 0; b <= G.length; b++) {
+				if (a == 0 && b == 0) continue;
+				if (a == n && b == G.length) continue;
+				rv = rv.concat(prod(bif[leftf](a, G.substring(0,b)),
+										  bif[rightf](n - a, G.substring(b,G.length))));
+			 }
+		  }
+		}
+		return rv;
+	 }
+  }
+  bif["v"] = memoize2(gen("v", function(G) { return G+"e" }, "v", "v", "e" ));
+  bif["e"] = memoize2(gen("e", function(G) { return "v" + G}, "v" ));
+  return bif;
+}
 
 
 function string(s) {
@@ -248,8 +278,12 @@ function viol(s) {
   });
 }
 
+var bif = gen_bif();
+console.log(bif["e"](6, "").length, cc_norm(6, 0).length);
 
-console.log(trif["e"](6, "").length, cc_norm(6, 0).length);
+
+
+
 //var t1 = tally(cc_norm(4, 0).map(nstring2).map(census));
 
 
