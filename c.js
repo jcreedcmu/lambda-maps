@@ -188,8 +188,8 @@ function gen_bif() {
 		return rv;
 	 }
   }
-  bif["v"] = memoize2(gen("v", function(G) { return G+"e" }, "v", "v", "e" ));
-  bif["e"] = memoize2(gen("e", function(G) { return "v" + G}, "v" ));
+  bif["v"] = memoize2(gen("v", function(G) { return "e"+G }, "v", "e", "v" ));
+  bif["e"] = memoize2(gen("e", function(G) { return  G+"v"}, "v" ));
   return bif;
 }
 
@@ -279,7 +279,7 @@ function viol(s) {
 }
 
 var bif = gen_bif();
-console.log(bif["e"](6, "").length, cc_norm(6, 0).length);
+console.log(bif["e"](8, "").length, cc_norm(6, 0).length);
 
 
 
