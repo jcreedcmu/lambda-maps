@@ -1,0 +1,364 @@
+\documentclass{article}
+\input{linear}
+\usepackage{color}
+\input{prooftree}
+\usepackage{stmaryrd}
+\def\erule#1#2{\begin{prooftree}#1\justifies#2\end{prooftree}}
+\def\nrposs{ \mathsf{poss}}
+\def\rposs{\ \mathsf{poss}}
+\def\rtk{\ \mathsf{tk}}
+\def\rvalid{\ \mathsf{valid}}
+\def\dia{\Diamond}
+\def\nec{\Square}
+\def\next{\Circle}
+\def\str{\blacksquare}
+\def\ups{{\uparrow}}
+\def\dns{{\downarrow}}
+\def\chat#1{[#1]}
+\def\lpar{\mathrel{\wp}}
+\def\wat{\mathrel{\triangleright}}
+\def\rto{\mathrel{\mathrm{to}}}
+\def\lig{{\lightning}}
+\def\succ{\mathsf{S}}
+\def\rblue#1{\textcolor{blue}{#1}}
+\def\from{\leftarrow}
+\def\rto{\twoheadrightarrow}
+\def\lto{\rightarrowtail}
+\def\elam{\tilde\lambda}
+\def\lam{\lambda}
+\begin{document}
+$$
+\begin{tabular}{r@{ $::= $ }l}
+  Vertex $V$&$ \lambda e . V \celse E\ V \celse v
+  %\celse \square
+  $\\
+  Edge $E$&$ \elam v . V \celse e
+  %\celse [R]
+  $\\
+\end{tabular}
+$$
+
+
+
+Define two functions: $N^+$ which takes a normal term and outputs an
+edge term, and $V + N$ which takes a vertex term and a normal term and
+outputs an vertex term. We allow putting `stubs' $\{E\}$ where atomic
+terms would otherwise go in the course of translation.
+$$
+\begin{tabular}{r@{ $=$ }l}
+$V + \lam x .x\ N_1\ \cdots\ N_n $&$ N_1^+\ (\cdots(N_n^+\  V)\cdots)$\\
+$V +\lam x . [x\ N_1\ \cdots\ N_n/y]N  $&$ N_1^+\ (\cdots(N_n^+\ (\lambda e.(V + [\{e\}/y]N)))\cdots)$\\
+$N^+ $&$ \elam v . (v + N) $\\
+$\{E\}^+ $&$ E$\\
+\end{tabular}
+$$
+
+\begin{tabular}{lll}
+$N$&$N^+$&$\lam$s\\
+$\lam x.x$&  $\elam v.v $&1\\
+$\lam x.\lam y.y\ x$&  $\elam v.\lam e.e\ v $&2\\
+$\lam x. x\ (\lam s.s)$&  $\elam v. (\elam w.w)\  v $&2\\
+$\lam x. x\ (\lam s. \lam y.y\ s)$&  $\elam v. (\elam w.\lam e.e\ w)\ v$&3\\
+$\lam x. \lam y. y\ x\ (\lam s.s)$&  $\elam v.\lam e.e\ ((\elam w.w)\ v)$&3\\
+$\lam x. \lam y.y\ (x\ (\lam s.s))$&  $\elam v.(\elam w.w)\ (\lam e.e\ v)$&3\\
+$\lam x. \lam y.y\ (\lam s.s)\ x$&  $\elam v.\lam e.(\elam w.w)\ (e\ v)$&3\\
+$\lam x. x\ (\lam s.s\ (\lam t.t))$&  $\elam v. (\elam w.(\elam u.u)\ w)\ v$&3\\
+$\lam x.x\ (\lam s.s)\ (\lam t.t)$&  $\elam v. (\elam w.w)\ ((\elam u.u)\ v)$&3\\
+$\lam x. \lam y.\lam z. (z\ y)\ x $&  $\elam v. \lam e.\lam f. f (e\ v)$&3\\
+$\lam x. \lam y. \lam z. z (y\ x)$&  $\elam v. \lam e.e\ (\lam f. f\ v)$&3\\
+$\lam x. \lam y. y\ (\lam s.s\ x)$&  $\elam v. \lam e. (\elam w.e\ w)\ v$&3\\
+\end{tabular}
+
+
+
+
+\vfil\eject
+Syntax is
+$$
+\begin{tabular}{r@{ $::= $ }l}
+  Normal $N$&$ \lambda x . N \celse R$\\
+  Atomic $R$&$ R\ N \celse x$\\
+\end{tabular}
+$$
+and
+$$
+\begin{tabular}{r@{ $::= $ }l}
+  Vertex $V$&$ \lambda e . V \celse E\ V \celse v \celse \square$\\
+  Edge $E$&$ \elam v . V \celse e \celse [R]$\\
+\end{tabular}
+$$
+The syntactic classes of vertices and edges are extended with
+$\square$ and $[R]$ only for the sake of intermediate forms in the
+translation. There should be a bijection between closed normal terms
+and closed edge terms containing no $\square$, $[R]$. The $\tilde \lambda$ indicates
+a lambda for $\rto$. All other lambdas are ordered $\lto$, all applications are ordered $\rto$.
+
+\vskip1em\noindent{\bf Translation}
+
+We define two functions, $E^*$ and $R \wat V$, both of which output normal terms.
+
+Twelf-style:
+$$
+\begin{tabular}{r@{ $=$ }l}
+  $(\elam v . V)^*$&$(\forall R. R \wat v = R) \imp \lambda x .  (x \wat V)$\\
+  $R \wat \lambda e . V$&$(e^* = R) \imp \lambda x . x \wat V$\\
+  $R \wat  E\  V$&$ (R\  E^*) \wat V$\\
+\end{tabular}
+$$
+
+With stubs:
+$$
+\begin{tabular}{r@{ $=$ }l}
+  $[R]^*$&$R$\\
+  $(\elam v . V)^*$&$\lambda x .  (x \wat [\square/v]V)$\\
+  $R \wat \lambda e . V$&$\lambda x . (x \wat [[R]/e]V)$\\
+  $R \wat  E\  V$&$ (R\  E^*) \wat V$\\
+  $R \wat \square$&$R$\\
+\end{tabular}
+$$
+{\bf Examples}
+$$(\tilde \lambda w.\lambda e.(\lambda v_1.(\lambda v_2.(\lambda v_3.e\ v_3)\ v_2)\ v_1)\  w)^* = $$
+$$\lambda w.( \lambda e. e\  (\lambda v_1. v_1\ (\lambda v_2. v_2\ (\lambda v_3. v_3\ w))))$$
+
+
+$$(\elam v.\lambda e_1e_2.e_2\ (e_1\ (\lambda e_3.e_3\ v)))^* = $$
+$$\lambda v.  \lambda e_1.  \lambda e_2. \lambda e_3 . e_3 \ ((e_2\ e_1)\ v) $$
+
+
+
+
+\vfil\eject
+
+$$
+\begin{tabular}{r@{ $::= $ }l}
+   Skeletons $K$&$\lambda K \celse K\ K \celse \bullet$\\
+\end{tabular}
+$$
+$$
+\erule
+{}
+{\bullet : 1}
+\qquad
+\erule
+{K : n+1}
+{\lambda K : n}
+\qquad
+\erule
+{K_1:n_1\qquad K_2:n_2}
+{K_1\ K_2:n_1 + n_2}
+$$
+
+$$
+\begin{tabular}{r@{ $::= $ }l}
+  Pos. Types $A$&$a \celse B \rto A$\\
+  Neg. Types $B$&$\bar a\celse A \rto B$\\
+  Contexts $\Omega$&$\cdot \celse \Omega, x : B$\\
+\end{tabular}
+$$
+If $K:n$ and $\Omega$ is length $n$, then there exists $M$ and $A$
+such that $\Omega \prov M : A$
+
+$$
+\erule
+{}
+{x : \bar a \prov  x : a }
+$$
+$$
+\erule
+{\Omega, x : B \prov  M : A}
+{\Omega \prov  \lambda x . M : B \rto A }
+$$
+$$
+\erule
+{ \Omega_1 \prov N : A \qquad y :  B, \Omega_2 \prov R : a  }
+{x : A \rto B, \Omega_1, \Omega_2  \prov [x\ N/y]R : a  }
+$$
+
+\vfil\eject
+\noindent{\bf Skeletons}
+$$
+\begin{tabular}{r@{ $::= $ }l}
+  Normal Skeletons $K$&$\lambda K \celse  [T]$\\
+  Skeleton Spines $T$&$()\celse (K;T)$\\
+\end{tabular}
+$$
+{\bf Skeleton Size}
+$$
+\erule
+{}
+{() : 0}
+\qquad
+\erule
+{T : n}
+{[T] : n + 1}
+\qquad
+\erule
+{K : n+1}
+{\lambda K : n}
+\qquad
+\erule
+{K:n_1\qquad T:n_2}
+{(K;T):n_1 + n_2}
+$$
+{\bf Terms}
+$$
+\begin{tabular}{r@{ $::= $ }l}
+  Normal terms $M$&$\lambda x . M \celse x \cdot S$\\
+  Spines $S$&$()\celse (M; S)$\\
+\end{tabular}
+$$
+{\bf Types}
+$$
+\begin{tabular}{r@{ $::= $ }l}
+  Pos. Types $A$&$a \celse B \rto A$\\
+  Neg. Types $B$&$\bar a\celse A \rto B$\\
+  Contexts $\Omega$&$\cdot \celse \Omega, x : B$\\
+  Pos. Tw. Types $X$&$q \celse Y \lto X$\\
+  Neg. Tw. Types $Y$&$\bar q\celse X \rto Y$\\
+  Tw. Contexts $\Delta$&$\cdot \celse \Delta, x : Y$\\
+\end{tabular}
+$$
+{\bf Skeleton Filling}
+If $\Omega$ has length $n$, and $K:n$, then $\Omega \prov K \mapsto M : A$ for a unique $M, A$.
+If $\Omega$ has length $n$, and $T:n$, and $a$ is given, then $\Omega \prov T \mapsto S : B > a$ for a unique $S, B$.
+$$
+\erule
+{\Omega \prov T \mapsto S : B > a}
+{x : B, \Omega \prov  [T] \mapsto x \cdot S : a }
+\qquad
+\erule
+{}
+{ \prov () \mapsto () : \bar a > a}
+$$
+$$
+\erule
+{\Omega, x : B \prov  K \mapsto M : A}
+{\Omega \prov \lambda K \mapsto  \lambda x . M : B \rto A }
+\qquad
+\erule
+{ \Omega_1 \prov K \mapsto M : A \qquad \Omega_2 \prov T \mapsto S : B > a  }
+{ \Omega_1, \Omega_2  \prov (K;T) \mapsto (M; S) : (A \rto B) > a  }
+$$
+{\bf Twisted Skeleton Filling}
+If $\Omega$ has length $n$, and $K:n$, then $\Omega \prov K \mapsto M : X$ for a unique $M, X$.
+If $\Omega$ has length $n$, and $T:n$, and $a$ is given, then $\Omega \prov T \mapsto S : Y > a$ for a unique $S, Y$.
+$$
+\erule
+{\Omega \prov T \mapsto S : Y > q}
+{x : Y, \Omega \prov  [T] \mapsto x \cdot S : q }
+\qquad
+\erule
+{}
+{ \prov () \mapsto () : \bar q > q}
+$$
+$$
+\erule
+{x:Y, \Omega \prov  K \mapsto M : X}
+{\Omega \prov \lambda K \mapsto  \lambda x . M : Y \lto X }
+\qquad
+\erule
+{ \Omega_1 \prov K \mapsto M : X \qquad \Omega_2 \prov T \mapsto S : Y > q  }
+{ \Omega_1, \Omega_2  \prov (K;T) \mapsto (M; S) : (X \rto Y) > q  }
+$$
+\vfil\eject
+
+\noindent{\bf Skeletons}
+$$
+\begin{tabular}{r@{ $::= $ }l}
+  Directions $d$&$L \celse R$\\
+  Normal Skeletons $K$&$\lambda_d K \celse J$\\
+  Atomic Skeletons $J$&$  J \circ_d K \celse \bullet $\\
+\end{tabular}
+$$
+{\bf Skeleton Size}
+$$
+\erule
+{}
+{\bullet : 1}
+\qquad
+\erule
+{K : n+1}
+{\lambda_d K : n}
+\qquad
+\erule
+{J:n_1\qquad K:n_2}
+{J \circ_d K:n_1 + n_2}
+$$
+{\bf Terms}
+$$
+\begin{tabular}{r@{ $::= $ }l}
+  Normal terms $M$&$\lambda x . M \celse R$\\
+  Atomic Terms $R$&$R\ N \celse x$\\
+\end{tabular}
+$$
+{\bf Types}
+$$
+\begin{tabular}{r@{ $::= $ }l}
+  Types $A$&$a \celse A \rto B \celse A \lto B$\\
+  Contexts $\Omega$&$\cdot \celse \Omega, x : A$\\
+\end{tabular}
+$$
+{\bf Skeleton Filling}
+If $\Omega$ has length $n$, and $K:n$, then $\Omega \prov K \mapsto M : A$ for a unique $M, A$.
+
+$$
+\erule
+{\Omega \prov J \mapsto R :: a }
+{\Omega \prov J \mapsto R : a }
+$$
+
+$$
+\erule
+{}
+{  A \prov \bullet  :: A }
+$$
+$$
+\erule
+{\Omega, A \prov K  : B}
+{\Omega \prov  \lambda_R K  : A \rto B }
+\qquad
+\erule
+{A,\Omega \prov  K  : B}
+{\Omega \prov  \lambda_L K : A \lto B }
+$$
+$$
+\erule
+{ \Omega_1 \prov K : A \qquad   \Omega_2 \prov J  :: A \lto B  }
+{ \Omega_1, \Omega_2  \prov J \circ_L K  :: B}
+$$
+$$
+\erule
+{ \Omega_1 \prov J  :: A \rto B  \qquad   \Omega_2 \prov K : A }
+{ \Omega_1, \Omega_2  \prov J \circ_R K :: B}
+$$
+$K$ or $J$ are input, everything else is output.
+Consider
+$$K = \lambda_L\lambda_L\lambda_L(\bullet \circ_L \bullet) \circ_R \bullet$$
+$$
+\begin{prooftree}
+  \[
+  \[
+   \[
+  \justifies
+  x : a \prov \bullet\mapsto x : a
+  \]
+  \[
+  \justifies
+  y: a\lto b \prov \bullet \mapsto y : a \lto b \rto c
+  \]
+  \justifies
+  x : a, y: a\lto b\rto c \prov \bullet \circ_L \bullet \mapsto y\ x : b \rto c
+  \]
+  \[
+  \justifies
+  z: c \prov \bullet \mapsto z : c
+  \]
+  \justifies
+  x : ?, y: ?, z : ? \prov (\bullet \circ_L \bullet) \circ_R \bullet \mapsto ? : ?
+  \]
+  \justifies
+  \cdot \prov \lambda_L\lambda_L\lambda_L(\bullet \circ_L \bullet) \circ_R \bullet \mapsto ? : ?
+\end{prooftree}
+$$
+
+\end{document}
