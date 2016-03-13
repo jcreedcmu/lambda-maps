@@ -278,21 +278,32 @@ function viol(s) {
   });
 }
 
-var bif = gen_bif();
-console.log(bif["e"](8, "").length, cc_norm(6, 0).length);
 
+function count_v(l, v) {
+  var rv = 0;
+  if (l == 0 && v == 0) return 1;
+  //console.log("l v ?", l, v);
+  for (var i = 0; i <= l; i++) {
+	 for (var j = 0; j <= v; j++) {
+		if (i == 0 && j == 0)  continue;
+		//console.log("i j I J", i, j, l-i, v-j);
+		rv += count_e(i, j) * count_v(l-i, v-j) * choose(v, j);
+	 }
+  }
+  if (l >= 1)
+	 rv += count_v(l-1,v+1);
+  return rv;
+}
 
+function count_e(l, v) {
+  var rv = 0;
+  if (l == 0 && v == 1) return 1;
+  rv += count_v(l-1,v);
+  return rv;
+}
 
+console.log(count_v(0, 1));
 
-//var t1 = tally(cc_norm(4, 0).map(nstring2).map(census));
-
-
-
-// for(var i = 0; i < 7; i++) {
-//   console.log(cc_edge(i,2,false).length);
-// }
-
-// subj.forEach(function(x) {
-//   console.log(string(x));
-// });
-// console.log(subj.length);
+for (var i = 0; i < 12; i++) {
+  console.log(count_e(i, 0));
+}
