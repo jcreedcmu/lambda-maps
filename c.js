@@ -279,31 +279,88 @@ function viol(s) {
 }
 
 
-function count_v(l, v) {
-  var rv = 0;
-  if (l == 0 && v == 0) return 1;
-  //console.log("l v ?", l, v);
-  for (var i = 0; i <= l; i++) {
-	 for (var j = 0; j <= v; j++) {
-		if (i == 0 && j == 0)  continue;
-		//console.log("i j I J", i, j, l-i, v-j);
-		rv += count_e(i, j) * count_v(l-i, v-j) * choose(v, j);
+function vertex_and_edge_terminal() {
+  function count_v(l, v) {
+	 var rv = 0;
+	 if (l == 0 && v == 0) return 1;
+	 //console.log("l v ?", l, v);
+	 for (var i = 0; i <= l; i++) {
+		for (var j = 0; j <= v; j++) {
+		  if (i == 0 && j == 0)  continue;
+		  //console.log("i j I J", i, j, l-i, v-j);
+		  rv += count_e(i, j) * count_v(l-i, v-j) * choose(v, j);
+		}
 	 }
+	 if (l >= 1)
+		rv += count_v(l-1,v+1);
+	 return rv;
   }
-  if (l >= 1)
-	 rv += count_v(l-1,v+1);
-  return rv;
+
+  function count_e(l, v) {
+	 var rv = 0;
+	 if (l == 0 && v == 1) return 1;
+	 rv += count_v(l-1,v);
+	 return rv;
+  }
+  return count_e;
 }
 
-function count_e(l, v) {
-  var rv = 0;
-  if (l == 0 && v == 1) return 1;
-  rv += count_v(l-1,v);
-  return rv;
+function linear_subset() {
+  function count_atom(l, v) {
+	 var rv = 0;
+	 if (l == 0 && v == 1) return 1;
+	 for (var i = 0; i <= l; i++) {
+		for (var j = 0; j <= v; j++) {
+		  if (i == 0 && j == 0)  continue;
+		  if (i == l && j == v)  continue;
+		  rv += count_subnorm(i, j) * count_atom(l-i, v-j) * choose(v, j);
+		}
+	 }
+	 return rv;
+  }
+
+  function count_spine(l, v) {
+	 var rv = 0;
+	 if (l == 0 && v == 0) return 1;
+	 for (var i = 0; i <= l; i++) {
+		for (var j = 0; j <= v; j++) {
+		  if (i == 0 && j == 0)  continue;
+		  rv += count_subnorm(i, j) * count_spine(l-i, v-j) * choose(v, j);
+		}
+	 }
+	 return rv;
+  }
+
+  function count_subnorm(l, v) {
+	 var rv = count_atom(l,v);
+	 if (l >= 1) {
+		rv += count_norm(l-1,v+1);
+		rv += count_spine(l-1,v);
+	 }
+	 return rv;
+  }
+
+  function count_norm(l, v) {
+	 var rv = 0;
+	 if (l >= 1) {
+		rv += count_norm(l-1,v+1);
+		rv += count_spine(l-1,v);
+	 }
+	 return rv;
+  }
+
+  return {a:count_atom,s:count_spine,n:count_norm,x:count_subnorm};
 }
 
-console.log(count_v(0, 1));
+var f = linear_subset().x;
+//console.log(linear_subset().n(2,1));
+//console.log(linear_subset().n(1,2));
 
-for (var i = 0; i < 12; i++) {
-  console.log(count_e(i, 0));
+console.log(linear_subset().s(0,2));
+//console.log(linear_subset().s(1,1));
+
+if (0) {
+  for (var i = 0; i < 12; i++) {
+	 console.log(f(i, 0));
+  }
 }
