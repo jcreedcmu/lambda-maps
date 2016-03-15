@@ -1,4 +1,5 @@
 \documentclass{article}
+\input{theorem}
 \input{linear}
 \usepackage{color}
 \input{prooftree}
@@ -27,6 +28,118 @@
 \def\elam{\tilde\lambda}
 \def\lam{\lambda}
 \begin{document}
+$$
+\begin{tabular}{r@{ $::= $ }l}
+  Normal $N$&$ \lambda x . N \celse R$\\
+  Atomic $R$&$ R\ N \celse x$\\
+\end{tabular}
+$$
+$$
+\begin{tabular}{r@{ $::= $ }l}
+  Vertex $V$&$ \lambda e . V \celse E\ V\celse \square
+  $\\
+  Edge $E$&$ [V] \celse e \celse \{R\}
+  $\\
+\end{tabular}
+$$
+
+\noindent{\bf World Typing for Terms}
+$$
+\erule
+{}
+{x::s \prov x :: s}
+\qquad
+\erule
+{\Gamma, t\ge s, x :: t \prov N :: t}
+{\Gamma\prov \lam x . N :: s}
+\qquad
+\erule
+{\Gamma \prov R :: t\qquad \Delta \prov N :: s \qquad t \ge s}
+{\Gamma, \Delta \prov R\ N :: t}
+$$
+
+\noindent{\bf World Typing for Maps}
+$$
+\erule
+{}
+{ \prov \square : s}
+\qquad
+\erule
+{\Gamma, e \prov V : s}
+{\Gamma\prov \lam e . V : s}
+\qquad
+\erule
+{\Gamma \prov E : s_1\qquad \Delta \prov V : s_2 \qquad t \ge s_1,s_2}
+{\Gamma, \Delta \prov E\ V : t}
+$$
+$$
+\erule
+{}
+{e \prov e : s}
+\qquad
+\erule
+{\Gamma\prov V : s}
+{\Gamma\prov [V] : s}
+\qquad
+\erule
+{\Gamma \prov R :: s}
+{\Gamma \prov \{R\} : s}
+$$
+
+\noindent{\bf Translation}
+$$
+\begin{tabular}{r@{ $=$ }l}
+  $\{R\}^*$&$R$\\
+  $[V]^*$&$\lambda x .  (x \wat V)$\\
+  $R \wat \lambda e . V$&$\lambda x . (x \wat [\{R\}/e]V)$\\
+  $R \wat  E\  V$&$ (R\  E^*) \wat V$\\
+  $R \wat \square$&$R$\\
+\end{tabular}
+$$
+
+\begin{lemma}
+  If $E$ is closed and has no occurrences of $\{ \}$ in it, then
+  $\prov E:s$ for any $s$.
+\end{lemma}
+\begin{lemma}
+  Suppose $\Gamma \prov R::u$ and $u\ge s$.
+  \begin{enumerate}
+  \item If $\Delta,e  \prov V:s$,  then $\Gamma,\Delta \prov [\{R\}/e]V:u$.
+  \item If $\Delta,e  \prov E:s$,  then $\Gamma,\Delta \prov [\{R\}/e]E:u$.
+  \end{enumerate}
+\end{lemma}
+\begin{lemma}
+Suppose $t \ge s$.
+  \begin{enumerate}
+  \item If $\Gamma\prov R::t$ and $\Delta \prov V : s$, then $\Gamma, \Delta \prov R \wat V :: t$.
+  \item If $\Gamma \prov E:s$,  then $\Gamma\prov E^*:s$.
+  \end{enumerate}
+\end{lemma}
+
+
+\vfil\eject
+Table of semiordered terms with four lambdas:
+
+\begin{tabular}{l@{  }l}
+$\elam v . \lam efg . e\ f\ g\ v$&$\lam v efg . g\ v\ e\ f$\\
+$\elam v . \lam efg . e\ g\ f\ v$&$\lam v efg . g\ v\ f\ e$\\
+$\elam v . \lam efg . g\ e\ f\ v$&$\lam v efg . g\ f\ v\ e$\\
+$\elam v . \lam efg . g\ f\ e\ v$&$\lam v efg . g\ f\ e\ v$\\
+$\elam v . \lam efg . f\ g\ e\ v$&$\lam v efg . g\ e\ f\ v$\\
+$\elam v . \lam efg . f\ e\ g\ v$&$\lam v efg . g\ e\ v\ f$\\
+$\elam v . \lam ef . e\ (\lam g . f\ g\ v)$&$\lam v ef  g . g\ e\ (f\ v)$\\
+$\elam v . \lam ef . e\ (\lam g . g\ f\ v)$&$\lam v ef  g . g\ (f\ v)\ e$\\
+$\elam v . \lam ef . f\ (\lam g . e\ g\ v)$&$\lam vefg.g\  v\ (f\ e)$\\
+$\elam v . \lam ef . f\ (\lam g . g\ e\ v)$&$\lam vefg. g\ (f\ e)\ v$\\
+$\elam v . \lam e . e\ (\lam f.f\ \ (\lam g . g\ v))$&$\lam vefg. g\ (f\ (e\ v))$\\
+$\elam v . \lam ef . e\ f\ (\lam g.g\ v)$&$\lam vefg. g\ (f\ v\ e)$\\
+$\elam v . \lam ef . f\ e\ (\lam g.g\ v)$&$\lam vefg. g\ (f\ e\ v)$\\
+$\elam v . \lam e . e\ (\lam fg.f\ g\ v)$&$\lam vefg.g\ (e\ v)\ f$\\
+$\elam v . \lam e . e\ (\lam fg.g\ f\ v)$&$\lam vefg.g\ f\ (e\ v)$\\
+\end{tabular}
+$$\lam v  efg . g\ v\ e\ f$$
+
+\vfil\eject
 $$
 \begin{tabular}{r@{ $::= $ }l}
   Vertex $V$&$ \lambda e . V \celse E\ V \celse v
