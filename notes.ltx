@@ -27,6 +27,8 @@
 \def\lto{\rightarrowtail}
 \def\elam{\tilde\lambda}
 \def\lam{\lambda}
+\def\E{\mathcal E}
+\def\V{\mathcal V}
 \begin{document}
 $$
 \begin{tabular}{r@{ $::= $ }l}
@@ -116,6 +118,15 @@ Suppose $t \ge s$.
   \end{enumerate}
 \end{lemma}
 
+
+$$
+\begin{tabular}{r@{ $::= $ }l}
+  Vertex Type $\V$&$ \varepsilon^- \lto \V \celse \E\bullet \V\celse 1
+  $\\
+  Edge Type $\E$&$ [\V] \celse \varepsilon^+
+  $\\
+\end{tabular}
+$$
 
 \vfil\eject
 Table of semiordered terms with four lambdas:
