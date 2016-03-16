@@ -1,8 +1,10 @@
 fullscreen();
-var PERROW = 10;
-var BLOCK = {x: 120, y: 200};
+var PERROW = 12;
+var BLOCK = {x: 120, y: 160};
 var MARGIN = 5;
-var S = 15;
+var S = 12.5;
+var RIGIDITY = 0.4;
+
 function offset_term(t, dx, dy) {
   var rv = _.extend({}, t, {pos:{x:t.pos.x+dx,y:t.pos.y+dy}});
   return rv;
@@ -56,6 +58,13 @@ function bound_center(pos, s) {
   return {x: (1/2 + pos.x) * S, y: (pos.y + (s.size.y - 1/2)) * S};
 }
 
+function curve(d, from, to) {
+  d.beginPath();
+  d.moveTo(from.x, from.y);
+  d.bezierCurveTo(from.x, from.y, to.x, to.y - (to.y - from.y) * RIGIDITY, to.x, to.y);
+  d.stroke();
+}
+
 function draw_edges(s, pos) {
   function draw_edges_off(s) {
 	 draw_edges(s, {x: s.pos.x + pos.x, y: s.pos.y + pos.y});
@@ -66,19 +75,10 @@ function draw_edges(s, pos) {
 	 var nc = node_center(pos, s);
 	 var Bc = child_center(pos, s, "B");
 	 var bc = bound_center(pos, s);
-
-	 d.beginPath();
 	 d.strokeStyle = "#07f";
-	 d.moveTo(nc.x, nc.y);
-	 d.lineTo(bc.x, bc.y);
-	 d.stroke();
-
-	 d.beginPath();
+	 curve(d, nc, bc);
 	 d.strokeStyle = "#e00";
-	 d.moveTo(nc.x, nc.y);
-	 d.lineTo(Bc.x, Bc.y);
-	 d.stroke();
-
+	 curve(d, nc, Bc);
 	 draw_edges_off(s.B);
 
   }
@@ -87,18 +87,11 @@ function draw_edges(s, pos) {
 	 var Lc = child_center(pos, s, "L");
 	 var Rc = child_center(pos, s, "R");
 
-	 d.beginPath();
 	 d.strokeStyle = "#07f";
-	 d.moveTo(nc.x, nc.y);
-	 d.lineTo(Lc.x, Lc.y);
-	 d.stroke();
+	 curve(d, nc, Lc);
 
-	 d.beginPath();
 	 d.strokeStyle = "#70f";
-	 d.moveTo(nc.x, nc.y);
-	 d.lineTo(Rc.x, Rc.y);
-	 d.stroke();
-
+	 curve(d, nc, Rc);
 
 	 draw_edges_off(s.L);
 	 draw_edges_off(s.R);
@@ -177,8 +170,8 @@ _.each(terms, function(term, i) {
 //  d.fillRect(0,0,100,100);
   var m = measure_term(term);
   d.translate(BLOCK.x / 2 -  S * m.size.x /2, 0);
-  d.fillStyle="#e3e9f0";
-  d.fillRect(0,0,m.size.x*S,m.size.y*S);
+//  d.fillStyle="#e3e9f0";
+//  d.fillRect(0,0,m.size.x*S,m.size.y*S);
   draw_term(m);
   d.restore();
 });
