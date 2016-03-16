@@ -194,7 +194,7 @@ function gen_bif() {
 }
 
 
-function string(s) {
+function lstring(s) {
   return traverse(s, {
 	 vor: function(x) { return "x" },
 	 lam: function(B, x) { return "/" + B; },
@@ -352,15 +352,15 @@ function linear_subset() {
   return {a:count_atom,s:count_spine,n:count_norm,x:count_subnorm};
 }
 
-var f = linear_subset().x;
-//console.log(linear_subset().n(2,1));
-//console.log(linear_subset().n(1,2));
+// var f = linear_subset().x;
+// //console.log(linear_subset().n(2,1));
+// //console.log(linear_subset().n(1,2));
 
-console.log(linear_subset().s(0,2));
-//console.log(linear_subset().s(1,1));
+// console.log(linear_subset().s(0,2));
+// //console.log(linear_subset().s(1,1));
 
-if (0) {
-  for (var i = 0; i < 12; i++) {
-	 console.log(f(i, 0));
-  }
-}
+// if (0) {
+//   for (var i = 0; i < 12; i++) {
+// 	 console.log(f(i, 0));
+//   }
+// }
