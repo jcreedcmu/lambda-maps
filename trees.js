@@ -1,5 +1,5 @@
 fullscreen();
-var PERROW = 12;
+var PERROW = 7;
 var BLOCK = {x: 120, y: 160};
 var MARGIN = 5;
 var S = 12.5;
@@ -151,27 +151,29 @@ function draw_connection(y, from, to) {
   d.stroke();
 }
 
-function draw_term(s) {
+function draw_term(s, conns) {
   draw_edges(s, {x:0,y:0});
   draw_nodes(s, {x:0,y:0});
-  _.each(connections(s), function(conn) {
+  _.each(conns, function(conn) {
 	 draw_connection((s.size.y - 1/2) * S, conn[0], conn[1]);
   });
 }
 
 
-var terms = c_norm(4, 0);
+// var terms = c_norm(4, 0);
+var terms = [{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"var"}},"R":{"type":"var"}}}}},"conn":[[0,5],[1,4],[2,3]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"var"}},"R":{"type":"var"}}}}},"conn":[[0,5],[1,3],[2,4]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"var"}},"R":{"type":"var"}}}}},"conn":[[0,4],[1,5],[2,3]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"var"}},"R":{"type":"var"}}}}},"conn":[[0,3],[1,5],[2,4]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,5],[1,4],[2,3]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,4],[1,5],[2,3]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"var"}},"R":{"type":"var"}}}}},"conn":[[0,4],[1,3],[2,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"var"}},"R":{"type":"var"}}}}},"conn":[[0,3],[1,4],[2,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,5],[1,3],[2,4]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,4],[1,3],[2,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,3],[1,5],[2,4]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,3],[1,4],[2,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"var"}}},"R":{"type":"var"}}}},"conn":[[0,5],[1,2],[3,4]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"var"}}},"R":{"type":"var"}}}},"conn":[[0,2],[1,5],[3,4]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"var"}},"R":{"type":"lam","B":{"type":"var"}}}}},"conn":[[0,3],[1,2],[4,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"var"}},"R":{"type":"lam","B":{"type":"var"}}}}},"conn":[[0,2],[1,3],[4,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,5],[1,2],[3,4]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,4],[1,2],[3,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"var"}}}}}},"conn":[[0,3],[1,2],[4,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,2],[1,5],[3,4]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,2],[1,4],[3,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"var"}}}}}},"conn":[[0,2],[1,3],[4,5]]},{"tree":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"var"}}},"R":{"type":"lam","B":{"type":"var"}}}},"conn":[[0,1],[2,3],[4,5]]},{"tree":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,1],[2,5],[3,4]]},{"tree":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,1],[2,4],[3,5]]},{"tree":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"var"}}}}}},"conn":[[0,1],[2,3],[4,5]]}];
+
 d.translate(MARGIN, MARGIN);
 d.fillStyle = "#dddddd";
 d.lineWidth = 1.7;
 _.each(terms, function(term, i) {
   d.save();
   d.translate((i % PERROW) * (BLOCK.x + MARGIN), Math.floor(i/PERROW) * (BLOCK.y + MARGIN));
-//  d.fillRect(0,0,100,100);
-  var m = measure_term(term);
+  //  d.fillRect(0,0,100,100);
+  var m = measure_term(term.tree);
   d.translate(BLOCK.x / 2 -  S * m.size.x /2, 0);
 //  d.fillStyle="#e3e9f0";
 //  d.fillRect(0,0,m.size.x*S,m.size.y*S);
-  draw_term(m);
+  draw_term(m, term.conn);
   d.restore();
 });
