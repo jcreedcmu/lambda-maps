@@ -3,7 +3,7 @@ var PERROW = 12;
 var BLOCK = {x: 120, y: 160};
 var MARGIN = 5;
 var S = 12.5;
-var RIGIDITY = 0.4;
+var RIGIDITY = 0.6;
 
 function offset_term(t, dx, dy) {
   var rv = _.extend({}, t, {pos:{x:t.pos.x+dx,y:t.pos.y+dy}});
@@ -128,7 +128,7 @@ function draw_nodes(s, pos) {
   if (s.type == "var") {
   }
   if (s.type == "lam") {
-	 d.fillStyle = "#009";
+	 d.fillStyle = "#000";
 	 fillCircle(d, (pos.x + (s.size.x) / 2) * S, (1/2 + pos.y) * S, S/3);
 	 draw_nodes_off(s.B);
   }
@@ -163,7 +163,7 @@ function draw_term(s) {
 var terms = c_norm(4, 0);
 d.translate(MARGIN, MARGIN);
 d.fillStyle = "#dddddd";
-d.lineWidth = 1.5;
+d.lineWidth = 1.7;
 _.each(terms, function(term, i) {
   d.save();
   d.translate((i % PERROW) * (BLOCK.x + MARGIN), Math.floor(i/PERROW) * (BLOCK.y + MARGIN));
