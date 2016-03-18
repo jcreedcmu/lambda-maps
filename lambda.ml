@@ -62,6 +62,47 @@ let left_extend free =
   0 :: List.map (fun x -> x + 1) free
 
 (* ----------------------------------- *)
+(* Type Inference *)
+(* ----------------------------------- *)
+
+type tp =
+  PosArrow of tp * tp
+| NegArrow of tp * tp
+| Tvar of (int * tp option) ref
+
+let new_tvar(counter) =
+  let c = !counter in
+  let () = counter := c + 1 in
+  ref (c, None)
+
+let unify (t1, t2) = match (t1, t2) with
+  (* Only need this one case with linear terms! *)
+  | (Tvar r, _) -> let (name, _) = !r in r := (name, Some t2)
+  | _ -> raise Not_found
+
+let type_of_term tree =
+  let counter = ref 0 in
+  let rec go gam tree = match tree with
+    | Lam body ->
+       let v = new_tvar(counter) in
+       PosArrow (Tvar v, go (v::gam) body)
+    | App (lt, rt) ->
+       let v = new_tvar(counter) in
+       let ltp = go gam lt in
+       let rtp = go gam rt in
+       let () = unify (ltp, NegArrow(rtp, Tvar v)) in
+       Tvar v
+    | Var db -> Tvar (List.nth gam db)
+  in
+  go [] tree
+
+let rec tree_of_type tp = match tp with
+  | PosArrow (lt, rt) -> Bin ("pos", tree_of_type lt, tree_of_type rt)
+  | NegArrow (lt, rt) -> Bin ("neg", tree_of_type lt, tree_of_type rt)
+  | Tvar {contents = (name, None)} -> Leaf name
+  | Tvar {contents = (_, Some inst)} -> tree_of_type inst
+
+(* ----------------------------------- *)
 (* Term Visualization *)
 (* ----------------------------------- *)
 
@@ -119,8 +160,7 @@ let pairs_of_vars vs =
 
 let json_of_pairs cs = `List (List.map (fun (x, y) ->  `List [`Int x; `Int y]) cs)
 
-let json_of_term term =
-  let tree = tree_of_term term in
+let json_of_tree tree =
   `Assoc [
      "tree", json_of_tree tree;
      "conn", json_of_pairs (pairs_of_vars (leafs_of_tree tree));
@@ -131,8 +171,14 @@ let enum_linear = enumerator left_extend linear_splits
 
 (* let x = leafs_of_tree(tree_of_term(List.nth (enum_linear 3 []) 15))*)
 
+let (++) f g x = f(g(x))
+
 let write() =
-  let json_string = to_string (`List (List.map json_of_term (enum_linear 3 []))) in
+  let terms = enum_ordered 4 [] in
+  let terms_json = `List (List.map (json_of_tree ++ tree_of_term) terms) in
+  let types_json = `List (List.map (json_of_tree ++ tree_of_type ++ type_of_term) terms) in
+  let json = `Assoc ["terms", terms_json; "types", types_json] in
+  let json_string = to_string json in
   let oc = open_out "data.js"  in
   Printf.fprintf oc "var data = %s\n" json_string;
   close_out oc
