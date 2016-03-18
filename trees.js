@@ -60,7 +60,6 @@ var colors = {
   lam: {left: "#07f", right: "#e00", fill: "#000" },
   neg: {left: "#70f", right: "#07f", fill: "#fff" },
   pos: {left: "#07f", right: "#e00", fill: "#000" },
-  dup: {left: "#07f", right: "#07f", fill: "#aaa" },
 }
 
 function draw_edges(d, s, pos) {
@@ -123,31 +122,6 @@ function draw_term(d, s, conns) {
 	 draw_connection(d, (s.size.y - 1/2) * S, conn[0], conn[1]);
   });
 }
-
-// var terms = c_norm(4, 0);
-
-// d.translate(MARGIN, MARGIN);
-// d.fillStyle = "#dddddd";
-// d.lineWidth = 1.7;
-
- var c = $("<canvas>");
-
-  c.appendTo($("body"));
-  c[0].width = 2 * BLOCK.x;
-  c[0].height = BLOCK.y;
-  var d = c[0].getContext("2d");
-
-d.save();
-function vv() { return {"type": "var"}}
-function vlam(a, b) { return {type: "bin", "subtype": "lam", L:a, R:b}}
-function vdup(a, b) { return {type: "bin", "subtype": "dup", L:a, R:b}}
-function vapp(a, b) { return {type: "bin", "subtype": "app", L:a, R:b}}
-var tree = vlam(vv(),vlam(vv(), vlam(vdup(vv(),vv()),vapp(vapp(vv(), vv()), vapp(vv(), vv())))));
-var m = measure_term(tree);
-d.translate(BLOCK.x / 2 -  S * m.size.x /2, 0);
-draw_term(d, m, [[0,4],[2,5],[1,6],[3,7]]);
-d.restore();
-
 
 _.each(data, function(datum, i) {
   var term = datum.term;
