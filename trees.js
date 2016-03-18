@@ -1,5 +1,5 @@
 var PERROW = 7;
-var BLOCK = {x: 120, y: 160};
+var BLOCK = {x: 120, y: 200};
 var MARGIN = 5;
 var S = 12.5;
 var RIGIDITY = 0.6;
@@ -60,6 +60,7 @@ var colors = {
   lam: {left: "#07f", right: "#e00", fill: "#000" },
   neg: {left: "#70f", right: "#07f", fill: "#fff" },
   pos: {left: "#07f", right: "#e00", fill: "#000" },
+  dup: {left: "#07f", right: "#07f", fill: "#aaa" },
 }
 
 function draw_edges(d, s, pos) {
@@ -109,6 +110,12 @@ function draw_connection(d, y, from, to) {
   d.stroke();
 }
 
+function decode(s) {
+  return s.replace(/\\u([0-9a-f]{4})/g, function(x, y) {
+	 return String.fromCharCode(parseInt(y, 16));
+  });
+}
+
 function draw_term(d, s, conns) {
   draw_edges(d, s, {x:0,y:0});
   draw_nodes(d, s, {x:0,y:0});
@@ -122,6 +129,25 @@ function draw_term(d, s, conns) {
 // d.translate(MARGIN, MARGIN);
 // d.fillStyle = "#dddddd";
 // d.lineWidth = 1.7;
+
+ var c = $("<canvas>");
+
+  c.appendTo($("body"));
+  c[0].width = 2 * BLOCK.x;
+  c[0].height = BLOCK.y;
+  var d = c[0].getContext("2d");
+
+d.save();
+function vv() { return {"type": "var"}}
+function vlam(a, b) { return {type: "bin", "subtype": "lam", L:a, R:b}}
+function vdup(a, b) { return {type: "bin", "subtype": "dup", L:a, R:b}}
+function vapp(a, b) { return {type: "bin", "subtype": "app", L:a, R:b}}
+var tree = vlam(vv(),vlam(vv(), vlam(vdup(vv(),vv()),vapp(vapp(vv(), vv()), vapp(vv(), vv())))));
+var m = measure_term(tree);
+d.translate(BLOCK.x / 2 -  S * m.size.x /2, 0);
+draw_term(d, m, [[0,4],[2,5],[1,6],[3,7]]);
+d.restore();
+
 
 _.each(data, function(datum, i) {
   var term = datum.term;
@@ -139,7 +165,10 @@ _.each(data, function(datum, i) {
   draw_term(d, m, term.conn);
   d.restore();
 
-  d.fillText(datum.type_string, 10, BLOCK.y - 5);
+  d.fillText(decode(datum.type_string), 10, BLOCK.y - 25);
+  d.fillText(decode(datum.term_string), 10, BLOCK.y - 40);
+  d.fillStyle = "#aaa";
+  d.fillRect(0,BLOCK.y - 15, BLOCK.x * 2, 1);
 
   d.save();
   d.translate(BLOCK.x, 0);

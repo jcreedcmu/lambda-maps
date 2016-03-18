@@ -213,14 +213,30 @@ let string_of_tree tree var_namer =
   in
   go (tree_map var_namer (normalize_tree tree))
 
+let string_of_term_tree tree  =
+  let parenize b x = if b then "(" ^ x ^ ")" else x in
+  let rec go t paren_arrow = match t with
+    | Leaf s -> s
+    | Bin("lam", lt, rt) -> parenize paren_arrow ("\\u03bb" ^ go lt false ^ "." ^ go rt false)
+    | Bin("app", lt, rt) -> parenize paren_arrow (go lt false ^ " " ^ go rt true)
+  in
+  go (tree_map term_namer (normalize_tree tree)) false
+
+let string_of_type_tree tree  =
+  let parenize b x = if b then "(" ^ x ^ ")" else x in
+  let rec go t paren_arrow = match t with
+    | Leaf s -> s
+    | Bin("pos", lt, rt) ->  parenize paren_arrow (go lt true ^ " \\u21a0 " ^ go rt false)
+    | Bin("neg", lt, rt) ->  parenize paren_arrow (go lt true ^ " \\u21a3 " ^ go rt false)
+  in
+  go (tree_map type_namer (normalize_tree tree)) false
+
 (* ----------------------------------- *)
 (* Main program *)
 (* ----------------------------------- *)
 
 let enum_ordered = enumerator left_extend list_splits
 let enum_linear = enumerator left_extend linear_splits
-
-(* let x = leafs_of_tree(tree_of_term(List.nth (enum_linear 3 []) 15))*)
 
 let (++) f g x = f(g(x))
 
@@ -230,8 +246,8 @@ let data_of_term term =
   `Assoc[
      "term", json_of_tree term_tree;
      "type", json_of_tree type_tree;
-     "term_string", `String (string_of_tree term_tree term_namer);
-     "type_string", `String (string_of_tree type_tree type_namer);
+     "term_string", `String (string_of_term_tree term_tree);
+     "type_string", `String (string_of_type_tree type_tree);
    ]
 
 let write() =
