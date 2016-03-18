@@ -123,19 +123,24 @@ function draw_term(d, s, conns) {
 // d.fillStyle = "#dddddd";
 // d.lineWidth = 1.7;
 
-_.each(data.terms, function(term, i) {
+_.each(data, function(datum, i) {
+  var term = datum.term;
+  var tp = datum.type;
   var c = $("<canvas>");
+
   c.appendTo($("body"));
   c[0].width = 2 * BLOCK.x;
   c[0].height = BLOCK.y;
   var d = c[0].getContext("2d");
+
   d.save();
   var m = measure_term(term.tree);
   d.translate(BLOCK.x / 2 -  S * m.size.x /2, 0);
   draw_term(d, m, term.conn);
   d.restore();
 
-  var tp = data.types[i];
+  d.fillText(datum.type_string, 10, BLOCK.y - 5);
+
   d.save();
   d.translate(BLOCK.x, 0);
   var m = measure_term(tp.tree);

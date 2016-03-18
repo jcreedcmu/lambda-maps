@@ -103,7 +103,7 @@ let rec tree_of_type tp = match tp with
   | Tvar {contents = (_, Some inst)} -> tree_of_type inst
 
 (* ----------------------------------- *)
-(* Term Visualization *)
+(* Tree Visualization *)
 (* ----------------------------------- *)
 
 (* Assign unique names to all variables, and homogenize the structure
@@ -135,32 +135,6 @@ let rec tree_map f tree = match tree with
   | Leaf n -> Leaf (f n)
   | Bin (name, lt, rt) -> Bin(name, tree_map f lt, tree_map f rt)
 
-(* Given a 'balanced' list, where every element occurs exactly twice,
-   return a function that maps every occurring element to its rank,
-   where the first distinct element to appear has rank 0, the next has
-   rank 1, etc.
-
-   For example, list_normalizer ["a"; "b"; "d"; "b"; "a"; "c"; "c"; "d"] returns
-   a function f such that
-   f "a" = 0
-   f "b" = 1
-   f "d" = 2
-   f "c" = 3
- *)
-let list_normalizer xs =
-  let rec go xs n mem = match xs with
-    | [] -> mem
-    | h::tl -> if List.exists (fun (k, _) -> k = h) mem
-               then go tl n mem
-               else go tl (n+1) ((h,n)::mem)
-  in
-  let mem = go xs 0 [] in
-  fun k -> snd (List.find (fun ki -> fst ki = k) mem)
-
-let normalize_tree tree =
-  let leafs = leafs_of_tree tree in
-  let leaf_normalizer = list_normalizer leafs in
-  tree_map leaf_normalizer tree
 
 let rec json_of_tree x = match x with
   | Bin (name, lt, rt) ->
@@ -194,6 +168,52 @@ let json_of_tree tree =
    ]
 
 (* ----------------------------------- *)
+(* Tree Stringification *)
+(* ----------------------------------- *)
+
+(* Given a 'balanced' list, where every element occurs exactly twice,
+   return a function that maps every occurring element to its rank,
+   where the first distinct element to appear has rank 0, the next has
+   rank 1, etc.
+
+   For example, list_normalizer ["a"; "b"; "d"; "b"; "a"; "c"; "c"; "d"] returns
+   a function f such that
+   f "a" = 0
+   f "b" = 1
+   f "d" = 2
+   f "c" = 3
+ *)
+let list_normalizer xs =
+  let rec go xs n mem = match xs with
+    | [] -> mem
+    | h::tl -> if List.exists (fun (k, _) -> k = h) mem
+               then go tl n mem
+               else go tl (n+1) ((h,n)::mem)
+  in
+  let mem = go xs 0 [] in
+  fun k -> snd (List.find (fun ki -> fst ki = k) mem)
+
+let normalize_tree tree =
+  let leafs = leafs_of_tree tree in
+  let leaf_normalizer = list_normalizer leafs in
+  tree_map leaf_normalizer tree
+
+let namer defaults numbered n =
+  if n < List.length defaults
+  then List.nth defaults n
+  else numbered ^ string_of_int(n - List.length defaults)
+
+let term_namer n = namer ["x"; "y"; "z"; "u"; "v"; "w"; "s"; "t"] "a" n
+let type_namer n = namer ["A"; "B"; "C"; "D"; "E"; "F"; "G"] "X" n
+
+let string_of_tree tree var_namer =
+  let rec go t = match t with
+    | Leaf s -> s
+    | Bin(name, lt, rt) -> name ^ "(" ^ go lt ^ ", " ^ go rt ^ ")"
+  in
+  go (tree_map var_namer (normalize_tree tree))
+
+(* ----------------------------------- *)
 (* Main program *)
 (* ----------------------------------- *)
 
@@ -204,11 +224,19 @@ let enum_linear = enumerator left_extend linear_splits
 
 let (++) f g x = f(g(x))
 
+let data_of_term term =
+  let term_tree = tree_of_term term in
+  let type_tree = tree_of_type (type_of_term term) in
+  `Assoc[
+     "term", json_of_tree term_tree;
+     "type", json_of_tree type_tree;
+     "term_string", `String (string_of_tree term_tree term_namer);
+     "type_string", `String (string_of_tree type_tree type_namer);
+   ]
+
 let write() =
   let terms = enum_ordered 4 [] in
-  let terms_json = `List (List.map (json_of_tree ++ tree_of_term) terms) in
-  let types_json = `List (List.map (json_of_tree ++ tree_of_type ++ type_of_term) terms) in
-  let json = `Assoc ["terms", terms_json; "types", types_json] in
+  let json = `List (List.map data_of_term terms) in
   let json_string = to_string json in
   let oc = open_out "data.js"  in
   Printf.fprintf oc "var data = %s\n" json_string;
