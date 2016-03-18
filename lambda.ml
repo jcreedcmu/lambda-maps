@@ -1,7 +1,7 @@
 #require "yojson";;
 open Yojson;;
 
-type term = Var of int | Lam of term | App of term * term
+type term = Var of int | Lam of bool * term | App of term * term
 
 type 'a tree = Bin of string * 'a tree * 'a tree | Leaf of 'a
 
@@ -36,11 +36,19 @@ let rec cross a b = match a with
   | [] -> []
   | h::tl -> List.map (fun bx -> (h, bx)) b @ cross tl b
 
+let infer_tops term =
+  let rec go term top = match term with
+    | Lam (_, body) -> Lam(top, go body false)
+    | App (lt, rt) -> App(go lt false, go rt true) (* first branch shouldn't have any lambdas anyway *)
+    | Var db -> Var db
+  in
+  go term true
+
 let enumerator var_extend var_splits =
   let rec enum_normal lams free  =
     let lamcase = if lams = 0
                   then []
-                  else List.map (fun x -> Lam x) (enum_normal (lams-1) (var_extend free))
+                  else List.map (fun x -> Lam (false, x)) (enum_normal (lams-1) (var_extend free))
     in lamcase @ enum_atomic lams free
   and enum_atomic lams free  = match (lams, free) with
     | (0,[x]) -> [Var x]
@@ -53,7 +61,7 @@ let enumerator var_extend var_splits =
                                                   (enum_normal lams2 free2))) in
                List.map (fun (x, y) -> App (x, y)) branches
   in
-  enum_normal
+  fun lams free -> List.map infer_tops (enum_normal lams free)
 
 let right_extend free =
   List.map (fun x -> x + 1) free @ [0]
@@ -66,7 +74,7 @@ let left_extend free =
 (* ----------------------------------- *)
 
 type tp =
-  PosArrow of tp * tp
+  PosArrow of bool * tp * tp
 | NegArrow of tp * tp
 | Tvar of (int * tp option) ref
 
@@ -83,9 +91,9 @@ let unify (t1, t2) = match (t1, t2) with
 let type_of_term tree =
   let counter = ref 0 in
   let rec go gam tree = match tree with
-    | Lam body ->
+    | Lam (top, body) ->
        let v = new_tvar(counter) in
-       PosArrow (Tvar v, go (v::gam) body)
+       PosArrow (top, Tvar v, go (v::gam) body)
     | App (lt, rt) ->
        let v = new_tvar(counter) in
        let ltp = go gam lt in
@@ -97,7 +105,7 @@ let type_of_term tree =
   go [] tree
 
 let rec tree_of_type tp = match tp with
-  | PosArrow (lt, rt) -> Bin ("pos", tree_of_type lt, tree_of_type rt)
+  | PosArrow (top, lt, rt) -> Bin ((if top then "spos" else "pos"), tree_of_type lt, tree_of_type rt)
   | NegArrow (lt, rt) -> Bin ("neg", tree_of_type lt, tree_of_type rt)
   | Tvar {contents = (name, None)} -> Leaf name
   | Tvar {contents = (_, Some inst)} -> tree_of_type inst
@@ -115,9 +123,9 @@ let tree_of_term term =
      whose position in gam is their debruijn index *)
   (* n is an incrementing counter to give distinct names to variables *)
   let rec go x gam n = match x with
-    | Lam body ->
+    | Lam (top, body) ->
        let (bo, n1) = go body (n::gam) (n+1) in
-       (Bin("lam", Leaf n, bo), n1)
+       (Bin((if top then "slam" else "lam"), Leaf n, bo), n1)
     | App (lt, rt) ->
        let (lo, n1) = go lt gam n in
        let (ro, n2) = go rt gam n1 in
@@ -218,6 +226,7 @@ let string_of_term_tree tree  =
   let rec go t paren_arrow = match t with
     | Leaf s -> s
     | Bin("lam", lt, rt) -> parenize paren_arrow ("\\u03bb" ^ go lt false ^ "." ^ go rt false)
+    | Bin("slam", lt, rt) -> parenize paren_arrow ("\\u039b" ^ go lt false ^ "." ^ go rt false)
     | Bin("app", lt, rt) -> parenize paren_arrow (go lt false ^ " " ^ go rt true)
   in
   go (tree_map term_namer (normalize_tree tree)) false
@@ -227,6 +236,7 @@ let string_of_type_tree tree  =
   let rec go t paren_arrow = match t with
     | Leaf s -> s
     | Bin("pos", lt, rt) ->  parenize paren_arrow (go lt true ^ " \\u21a0 " ^ go rt false)
+    | Bin("spos", lt, rt) ->  parenize paren_arrow (go lt true ^ " \\u27ff " ^ go rt false)
     | Bin("neg", lt, rt) ->  parenize paren_arrow (go lt true ^ " \\u21a3 " ^ go rt false)
   in
   go (tree_map type_namer (normalize_tree tree)) false
@@ -251,7 +261,7 @@ let data_of_term term =
    ]
 
 let write() =
-  let terms = enum_ordered 4 [] in
+  let terms = enum_linear 3 [] in
   let json = `List (List.map data_of_term terms) in
   let json_string = to_string json in
   let oc = open_out "data.js"  in

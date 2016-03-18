@@ -1,8 +1,10 @@
 var PERROW = 7;
 var BLOCK = {x: 120, y: 200};
 var MARGIN = 5;
-var S = 12.5;
+var S = 13;
+var DOT_SIZE = 4.7;
 var RIGIDITY = 0.6;
+var LINE_WIDTH = 1.5;
 
 function offset_term(t, dx, dy) {
   var rv = _.extend({}, t, {pos:{x:t.pos.x+dx,y:t.pos.y+dy}});
@@ -55,12 +57,19 @@ function curve(d, from, to) {
   d.stroke();
 }
 
+var light_blue = "#19f";
+var dark_blue = "#227";
+var light_purple = "#8d1aef"
+var light_brown = "#851";
 var colors = {
-  app: {left: "#07f", right: "#70f", fill: "#fff" },
-  lam: {left: "#07f", right: "#e00", fill: "#000" },
-  neg: {left: "#70f", right: "#07f", fill: "#fff" },
-  pos: {left: "#07f", right: "#e00", fill: "#000" },
+  app:  {left: light_blue,    right: light_purple, fill: "#fff", stroke: light_brown },
+  slam: {left: light_blue,    right: "#e00", fill: dark_blue },
+  lam:  {left: light_blue,    right: "#e00", fill: light_brown },
 }
+
+colors.neg = colors.app;
+colors.pos = colors.lam;
+colors.spos = colors.slam;
 
 function draw_edges(d, s, pos) {
   function draw_edges_off(s) {
@@ -91,10 +100,16 @@ function draw_nodes(d, s, pos) {
   if (s.type == "var") {
   }
   if (s.type == "bin") {
-	 d.fillStyle = "#000";
-	 fillCircle(d, (pos.x + (s.size.x) / 2) * S, (1/2 + pos.y) * S, S/3);
-	 d.fillStyle = colors[s.subtype].fill;
-	 fillCircle(d, (pos.x + (s.size.x ) / 2) * S, (1/2 + pos.y) * S, S/4);
+	 if (colors[s.subtype].stroke != null) {
+		d.fillStyle = colors[s.subtype].stroke;
+		fillCircle(d, (pos.x + (s.size.x) / 2) * S, (1/2 + pos.y) * S, DOT_SIZE);
+ 		d.fillStyle = colors[s.subtype].fill;
+		fillCircle(d, (pos.x + (s.size.x ) / 2) * S, (1/2 + pos.y) * S, DOT_SIZE - LINE_WIDTH);
+	 }
+	 else {
+ 		d.fillStyle = colors[s.subtype].fill;
+		fillCircle(d, (pos.x + (s.size.x ) / 2) * S, (1/2 + pos.y) * S, DOT_SIZE);
+	 }
 	 draw_nodes_off(s.L);
 	 draw_nodes_off(s.R);
   }
@@ -105,7 +120,7 @@ function draw_connection(d, y, from, to) {
   var m = (from + to) / 2;
   var R = (to - from) / 2;
   d.arc((m + 1/2) * S, y, R * S, 0, Math.PI);
-  d.strokeStyle = "#07f";
+  d.strokeStyle = light_blue;
   d.stroke();
 }
 
@@ -132,6 +147,8 @@ _.each(data, function(datum, i) {
   c[0].width = 2 * BLOCK.x;
   c[0].height = BLOCK.y;
   var d = c[0].getContext("2d");
+
+  d.lineWidth = 2;
 
   d.save();
   var m = measure_term(term.tree);
