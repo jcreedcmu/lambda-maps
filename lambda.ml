@@ -135,6 +135,33 @@ let rec tree_map f tree = match tree with
   | Leaf n -> Leaf (f n)
   | Bin (name, lt, rt) -> Bin(name, tree_map f lt, tree_map f rt)
 
+(* Given a 'balanced' list, where every element occurs exactly twice,
+   return a function that maps every occurring element to its rank,
+   where the first distinct element to appear has rank 0, the next has
+   rank 1, etc.
+
+   For example, list_normalizer ["a"; "b"; "d"; "b"; "a"; "c"; "c"; "d"] returns
+   a function f such that
+   f "a" = 0
+   f "b" = 1
+   f "d" = 2
+   f "c" = 3
+ *)
+let list_normalizer xs =
+  let rec go xs n mem = match xs with
+    | [] -> mem
+    | h::tl -> if List.exists (fun (k, _) -> k = h) mem
+               then go tl n mem
+               else go tl (n+1) ((h,n)::mem)
+  in
+  let mem = go xs 0 [] in
+  fun k -> snd (List.find (fun ki -> fst ki = k) mem)
+
+let normalize_tree tree =
+  let leafs = leafs_of_tree tree in
+  let leaf_normalizer = list_normalizer leafs in
+  tree_map leaf_normalizer tree
+
 let rec json_of_tree x = match x with
   | Bin (name, lt, rt) ->
      `Assoc [
@@ -165,6 +192,10 @@ let json_of_tree tree =
      "tree", json_of_tree tree;
      "conn", json_of_pairs (pairs_of_vars (leafs_of_tree tree));
    ]
+
+(* ----------------------------------- *)
+(* Main program *)
+(* ----------------------------------- *)
 
 let enum_ordered = enumerator left_extend list_splits
 let enum_linear = enumerator left_extend linear_splits
