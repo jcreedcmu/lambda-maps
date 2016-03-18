@@ -14,20 +14,13 @@ function measure_term(s) {
   if (s.type == "var") {
 	 return {type: "var", size:{x:1,y:1}, pos: {x:0,y:0}};
   }
-  if (s.type == "lam") {
-	 var B = measure_term(s.B);
-	 return {type: "lam",
-				size:{x:B.size.x+1, y:B.size.y+1},
-				pos: {x:0, y:0},
-				B: offset_term(B, 1, 1),
-			  }
-  }
-  if (s.type == "app") {
+  if (s.type == "bin") {
 	 var L = measure_term(s.L);
 	 var R = measure_term(s.R);
 	 var h = Math.max(L.size.y, R.size.y);
 	 var w = L.size.x + R.size.x;
-	 return {type: "app",
+	 return {type: "bin",
+				subtype: s.subtype,
 				size:{x:w, y:h+1},
 				pos: {x:0, y:0},
 				L: offset_term(L, 0, 1 + (h - L.size.y)),
@@ -35,8 +28,6 @@ function measure_term(s) {
 			  }
   }
 }
-
-
 
 function fillCircle(d, x, y, r) {
   d.beginPath();
@@ -71,18 +62,7 @@ function draw_edges(s, pos) {
   }
   if (s.type == "var") {
   }
-  if (s.type == "lam") {
-	 var nc = node_center(pos, s);
-	 var Bc = child_center(pos, s, "B");
-	 var bc = bound_center(pos, s);
-	 d.strokeStyle = "#07f";
-	 curve(d, nc, bc);
-	 d.strokeStyle = "#e00";
-	 curve(d, nc, Bc);
-	 draw_edges_off(s.B);
-
-  }
-  if (s.type == "app") {
+  if (s.type == "bin") {
 	 var nc = node_center(pos, s);
 	 var Lc = child_center(pos, s, "L");
 	 var Rc = child_center(pos, s, "R");
@@ -90,35 +70,12 @@ function draw_edges(s, pos) {
 	 d.strokeStyle = "#07f";
 	 curve(d, nc, Lc);
 
-	 d.strokeStyle = "#70f";
+	 d.strokeStyle = s.subtype == "app" ? "#70f" : "#e00";
 	 curve(d, nc, Rc);
 
 	 draw_edges_off(s.L);
 	 draw_edges_off(s.R);
   }
-}
-
-function pstring(s) {
-  return traverse(s, {
-	 vor: function(x) { return ")" },
-	 lam: function(B, x) { return "(" + B; },
-	 app: function(L, R, x) {
-		return L + R;
-	 }});
-}
-
-function connections(s) {
-  var ps = pstring(s);
-  var stack = [];
-  var rv = [];
-  for (var i = 0; i < ps.length; i++) {
-	 if (ps[i] == "(") stack.push(i);
-	 if (ps[i] == ")") {
-		var start = stack.pop();
-		rv.push([start, i]);
-	 }
-  }
-  return rv;
 }
 
 function draw_nodes(s, pos) {
@@ -127,16 +84,13 @@ function draw_nodes(s, pos) {
   }
   if (s.type == "var") {
   }
-  if (s.type == "lam") {
+  if (s.type == "bin") {
 	 d.fillStyle = "#000";
 	 fillCircle(d, (pos.x + (s.size.x) / 2) * S, (1/2 + pos.y) * S, S/3);
-	 draw_nodes_off(s.B);
-  }
-  if (s.type == "app") {
-	 d.fillStyle = "black";
-	 fillCircle(d, (pos.x + (s.size.x ) / 2) * S, (1/2 + pos.y) * S, S/3);
-	 d.fillStyle = "white";
-	 fillCircle(d, (pos.x + (s.size.x ) / 2) * S, (1/2 + pos.y) * S, S/4);
+	 if (s.subtype == "app") {
+		d.fillStyle = "white";
+		fillCircle(d, (pos.x + (s.size.x ) / 2) * S, (1/2 + pos.y) * S, S/4);
+	 }
 	 draw_nodes_off(s.L);
 	 draw_nodes_off(s.R);
   }
@@ -159,14 +113,12 @@ function draw_term(s, conns) {
   });
 }
 
-
 // var terms = c_norm(4, 0);
-var terms = [{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"var"}},"R":{"type":"var"}}}}},"conn":[[0,5],[1,4],[2,3]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"var"}},"R":{"type":"var"}}}}},"conn":[[0,5],[1,3],[2,4]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"var"}},"R":{"type":"var"}}}}},"conn":[[0,4],[1,5],[2,3]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"var"}},"R":{"type":"var"}}}}},"conn":[[0,3],[1,5],[2,4]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,5],[1,4],[2,3]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,4],[1,5],[2,3]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"var"}},"R":{"type":"var"}}}}},"conn":[[0,4],[1,3],[2,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"var"}},"R":{"type":"var"}}}}},"conn":[[0,3],[1,4],[2,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,5],[1,3],[2,4]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,4],[1,3],[2,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,3],[1,5],[2,4]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,3],[1,4],[2,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"var"}}},"R":{"type":"var"}}}},"conn":[[0,5],[1,2],[3,4]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"var"}}},"R":{"type":"var"}}}},"conn":[[0,2],[1,5],[3,4]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"var"}},"R":{"type":"lam","B":{"type":"var"}}}}},"conn":[[0,3],[1,2],[4,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"var"}},"R":{"type":"lam","B":{"type":"var"}}}}},"conn":[[0,2],[1,3],[4,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,5],[1,2],[3,4]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,4],[1,2],[3,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"var"}}}}}},"conn":[[0,3],[1,2],[4,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,2],[1,5],[3,4]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,2],[1,4],[3,5]]},{"tree":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"var"}}}}}},"conn":[[0,2],[1,3],[4,5]]},{"tree":{"type":"lam","B":{"type":"app","L":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"var"}}},"R":{"type":"lam","B":{"type":"var"}}}},"conn":[[0,1],[2,3],[4,5]]},{"tree":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,1],[2,5],[3,4]]},{"tree":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"var"}}}}}},"conn":[[0,1],[2,4],[3,5]]},{"tree":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"app","L":{"type":"var"},"R":{"type":"lam","B":{"type":"var"}}}}}},"conn":[[0,1],[2,3],[4,5]]}];
 
 d.translate(MARGIN, MARGIN);
 d.fillStyle = "#dddddd";
 d.lineWidth = 1.7;
-_.each(terms, function(term, i) {
+_.each(data, function(term, i) {
   d.save();
   d.translate((i % PERROW) * (BLOCK.x + MARGIN), Math.floor(i/PERROW) * (BLOCK.y + MARGIN));
   //  d.fillRect(0,0,100,100);
