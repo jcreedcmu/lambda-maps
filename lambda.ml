@@ -111,6 +111,35 @@ let rec tree_of_type tp = match tp with
   | Tvar {contents = (_, Some inst)} -> tree_of_type inst
 
 (* ----------------------------------- *)
+(* Conversion to Trinity *)
+(* ----------------------------------- *)
+
+(* let trin_of_type_tree tree = *)
+(*   let counter = ref 0 in *)
+(*   let new_var(counter) = *)
+(*     let c = !counter in *)
+(*     let () = counter := c + 1 in *)
+(*     Var c *)
+(*   let rec go_sub tree = match tree with *)
+(*     | Bin("spos", lt, rt) -> *)
+(*       let v = new_var() in *)
+(*       let rto = go_norm rt v in *)
+(*       let lto = go_atom lt rto in *)
+(*       Bin("lamv", lto, v) *)
+(*     | Var name -> Var name??? *)
+(*     | _ -> raise Not_found *)
+(*   and go_norm tree vert = match tree with *)
+(*     | Bin ("pos", lt, rt) -> *)
+(*        let rto = go_norm rt vert in *)
+(*        let lto = go_atom lt rto in *)
+(*        lto *)
+(*     | _ -> vert *)
+(*   and go_atom tree vert = match tree with *)
+  (*       in *)
+(* go_sub tree *)
+
+
+(* ----------------------------------- *)
 (* Tree Visualization *)
 (* ----------------------------------- *)
 
