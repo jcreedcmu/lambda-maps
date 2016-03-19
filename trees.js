@@ -65,9 +65,10 @@ var colors = {
   app:  {left: light_blue,    right: light_purple, fill: "#fff", stroke: light_brown },
   slam: {left: light_blue,    right: "#e00", fill: dark_blue },
   lam:  {left: light_blue,    right: "#e00", fill: light_brown },
+  neg:   {left: light_purple,    right: light_blue, fill: "#fff", stroke: light_brown },
 }
 
-colors.neg = colors.app;
+
 colors.pos = colors.lam;
 colors.spos = colors.slam;
 

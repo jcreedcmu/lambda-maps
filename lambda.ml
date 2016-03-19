@@ -1,7 +1,8 @@
 #require "yojson";;
 open Yojson;;
 
-type term = Var of int | Lam of bool * term | App of term * term
+type lam_info = LITop | LIMid
+type term = Var of int | Lam of lam_info * term | App of term * term
 
 type 'a tree = Bin of string * 'a tree * 'a tree | Leaf of 'a
 
@@ -38,17 +39,17 @@ let rec cross a b = match a with
 
 let infer_tops term =
   let rec go term top = match term with
-    | Lam (_, body) -> Lam(top, go body false)
-    | App (lt, rt) -> App(go lt false, go rt true) (* first branch shouldn't have any lambdas anyway *)
+    | Lam (_, body) -> Lam(top, go body LIMid)
+    | App (lt, rt) -> App(go lt LIMid, go rt LITop) (* first branch shouldn't have any lambdas anyway *)
     | Var db -> Var db
   in
-  go term true
+  go term LITop
 
 let enumerator var_extend var_splits =
   let rec enum_normal lams free  =
     let lamcase = if lams = 0
                   then []
-                  else List.map (fun x -> Lam (false, x)) (enum_normal (lams-1) (var_extend free))
+                  else List.map (fun x -> Lam (LIMid, x)) (enum_normal (lams-1) (var_extend free))
     in lamcase @ enum_atomic lams free
   and enum_atomic lams free  = match (lams, free) with
     | (0,[x]) -> [Var x]
@@ -74,7 +75,7 @@ let left_extend free =
 (* ----------------------------------- *)
 
 type tp =
-  PosArrow of bool * tp * tp
+  PosArrow of lam_info * tp * tp
 | NegArrow of tp * tp
 | Tvar of (int * tp option) ref
 
@@ -105,7 +106,7 @@ let type_of_term tree =
   go [] tree
 
 let rec tree_of_type tp = match tp with
-  | PosArrow (top, lt, rt) -> Bin ((if top then "spos" else "pos"), tree_of_type lt, tree_of_type rt)
+  | PosArrow (top, lt, rt) -> Bin ((match top with LITop -> "spos" | LIMid -> "pos"), tree_of_type lt, tree_of_type rt)
   | NegArrow (lt, rt) -> Bin ("neg", tree_of_type lt, tree_of_type rt)
   | Tvar {contents = (name, None)} -> Leaf name
   | Tvar {contents = (_, Some inst)} -> tree_of_type inst
@@ -154,7 +155,7 @@ let tree_of_term term =
   let rec go x gam n = match x with
     | Lam (top, body) ->
        let (bo, n1) = go body (n::gam) (n+1) in
-       (Bin((if top then "slam" else "lam"), Leaf n, bo), n1)
+       (Bin((match top with LITop -> "slam" | LIMid -> "lam"), Leaf n, bo), n1)
     | App (lt, rt) ->
        let (lo, n1) = go lt gam n in
        let (ro, n2) = go rt gam n1 in
