@@ -112,12 +112,39 @@ let rec tree_of_type tp = match tp with
   | Tvar {contents = (_, Some inst)} -> tree_of_type inst
 
 (* ----------------------------------- *)
+(* Tree Utilities *)
+(* ----------------------------------- *)
+
+let pairs_of_vars vs =
+  let find_use x ics = fst (List.find (fun y -> snd y = x) ics) in
+  let rec go ics = match ics with
+    | [] -> []
+    | ((i,  x)::tl) ->
+       try (i, find_use x tl) :: go tl
+       with Not_found -> go tl
+  in
+  go (List.mapi (fun x y -> (x, y)) vs)
+
+let rec leafs_of_tree tree = match tree with
+  | Leaf n -> [n]
+  | Bin (_, lt, rt) -> leafs_of_tree lt @ leafs_of_tree rt
+
+let rec tree_map f tree = match tree with
+  | Leaf n -> Leaf (f n)
+  | Bin (name, lt, rt) -> Bin(name, tree_map f lt, tree_map f rt)
+
+let rec findo f xs = match xs with
+  | [] -> raise Not_found
+  | h::tl -> match f h with Some s -> s | None -> findo f tl
+
+(* ----------------------------------- *)
 (* Conversion to Trinity *)
 (* ----------------------------------- *)
 
 type mapsort = MVert | MEdge
 
 type 'a frontier = FLeft of 'a | FRight of 'a
+type wire = WSubnorm | WAtom
 
 let frontierify_tree tree =
   let rec gosome tree k = go tree (Some k)
@@ -163,6 +190,41 @@ let number_leafs tree =
 (*         in *)
 (* go_sub tree *)
 
+let status_tree tp =
+  let ttree = tree_of_type tp in
+  let ntree = number_leafs ttree in
+  let pairs = pairs_of_vars (leafs_of_tree ttree) in
+  let find_partner (Lind n) =
+    findo (fun (a, b) -> if      a = n then Some b
+                         else if b = n then Some a
+                         else None) pairs
+  in
+  let statuses = List.map (fun x -> match x with
+                                    | Some (FLeft "neg") -> WSubnorm
+                                    | _ -> WAtom)
+                          (List.map snd (leafs_of_tree (frontierify_tree ttree)))
+  in
+  let partner_status lind = List.nth statuses (find_partner lind) in
+  tree_map (fun (name, lind) -> (name, partner_status lind)) ntree
+
+
+let trin_of_type tp =
+  let counter = ref 0 in
+  let new_var(counter) =
+    let c = !counter in
+    let () = counter := c + 1 in
+    Leaf (c, MVert)
+  in
+  let rec go_sub tree = match tree with
+    | _ -> raise Not_found
+  in
+  let rec go_norm tree = match tree with
+    | _ -> raise Not_found
+  in
+  let rec go_atom tree = match tree with
+    | _ -> raise Not_found
+  in
+  go_sub (status_tree tp)
 
 (* ----------------------------------- *)
 (* Tree Visualization *)
@@ -189,15 +251,6 @@ let tree_of_term term =
   let (out, _) = go term [] 0 in
   out
 
-let rec leafs_of_tree tree = match tree with
-  | Leaf n -> [n]
-  | Bin (_, lt, rt) -> leafs_of_tree lt @ leafs_of_tree rt
-
-let rec tree_map f tree = match tree with
-  | Leaf n -> Leaf (f n)
-  | Bin (name, lt, rt) -> Bin(name, tree_map f lt, tree_map f rt)
-
-
 let rec json_of_tree x = match x with
   | Bin (name, lt, rt) ->
      `Assoc [
@@ -210,16 +263,6 @@ let rec json_of_tree x = match x with
      `Assoc [
         "type", `String "var";
       ]
-
-let pairs_of_vars vs =
-  let find_use x ics = fst (List.find (fun y -> snd y = x) ics) in
-  let rec go ics = match ics with
-    | [] -> []
-    | ((i,  x)::tl) ->
-       try (i, find_use x tl) :: go tl
-       with Not_found -> go tl
-  in
-  go (List.mapi (fun x y -> (x, y)) vs)
 
 let json_of_pairs cs = `List (List.map (fun (x, y) ->  `List [`Int x; `Int y]) cs)
 
@@ -346,12 +389,6 @@ let write() =
   close_out oc
 
             (* let _ = write() *)
-
-type wire = WSubnorm | WAtom
-
-let rec findo f xs = match xs with
-  | [] -> raise Not_found
-  | h::tl -> match f h with Some s -> s | None -> findo f tl
 
 
 let term = List.nth (enum_linear 5 []) 5
