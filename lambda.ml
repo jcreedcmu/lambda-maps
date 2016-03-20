@@ -112,11 +112,12 @@ let rec tree_of_type tp = match tp with
   | Tvar {contents = (_, Some inst)} -> tree_of_type inst
 
 type 'a frontier = FLeft of 'a | FRight of 'a
-let frontier_of_tree tree =
+
+let frontierify_tree tree =
   let rec gosome tree k = go tree (Some k)
   and     go tree k = match tree with
-  | Bin (opr, lt, rt) -> gosome lt (FLeft opr) @ gosome rt (FRight opr)
-  | Leaf data -> [k]
+    | Bin (opr, lt, rt) -> Bin (opr, gosome lt (FLeft opr), gosome rt (FRight opr))
+    | Leaf data -> Leaf (data, k)
   in
   go tree None
 
@@ -124,12 +125,14 @@ let frontier_of_tree tree =
 (* Conversion to Trinity *)
 (* ----------------------------------- *)
 
+(* type mapsort = MVert | MEdge *)
+
 (* let trin_of_type_tree tree = *)
 (*   let counter = ref 0 in *)
 (*   let new_var(counter) = *)
 (*     let c = !counter in *)
 (*     let () = counter := c + 1 in *)
-(*     Var c *)
+(*     Var (c, MVert) *)
 (*   let rec go_sub tree = match tree with *)
 (*     | Bin("spos", lt, rt) -> *)
 (*       let v = new_var() in *)
@@ -145,7 +148,7 @@ let frontier_of_tree tree =
 (*        lto *)
 (*     | _ -> vert *)
 (*   and go_atom tree vert = match tree with *)
-  (*       in *)
+(*         in *)
 (* go_sub tree *)
 
 
@@ -219,10 +222,11 @@ let json_of_frontier fs =
 let (++) f g x = f(g(x))
 
 let json_of_tree tree =
-  `Assoc  ((List.map (fun (k, f) -> (k, f tree))) [
-     "tree", json_of_tree;
-     "conn", json_of_pairs ++ pairs_of_vars ++ leafs_of_tree;
-     "front", json_of_frontier ++ frontier_of_tree;
+  `Assoc
+   ((List.map (fun (k, f) -> (k, f tree))) [
+        "tree", json_of_tree;
+        "conn", json_of_pairs ++ pairs_of_vars ++ leafs_of_tree;
+        "front", json_of_frontier ++ (List.map snd) ++ leafs_of_tree ++ frontierify_tree;
    ])
 
 (* ----------------------------------- *)
