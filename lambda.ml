@@ -111,6 +111,15 @@ let rec tree_of_type tp = match tp with
   | Tvar {contents = (name, None)} -> Leaf name
   | Tvar {contents = (_, Some inst)} -> tree_of_type inst
 
+type 'a frontier = FLeft of 'a | FRight of 'a
+let frontier_of_tree tree =
+  let rec gosome tree k = go tree (Some k)
+  and     go tree k = match tree with
+  | Bin (opr, lt, rt) -> gosome lt (FLeft opr) @ gosome rt (FRight opr)
+  | Leaf data -> [k]
+  in
+  go tree None
+
 (* ----------------------------------- *)
 (* Conversion to Trinity *)
 (* ----------------------------------- *)
@@ -199,11 +208,22 @@ let pairs_of_vars vs =
 
 let json_of_pairs cs = `List (List.map (fun (x, y) ->  `List [`Int x; `Int y]) cs)
 
+let json_of_frontier fs =
+  `List
+   (List.map
+      (fun fx -> match fx with
+                 | Some(FLeft x) -> `List [`String "left"; `String x]
+                 | Some(FRight x) -> `List [`String "right"; `String x]
+                 | _ -> `Null) fs)
+
+let (++) f g x = f(g(x))
+
 let json_of_tree tree =
-  `Assoc [
-     "tree", json_of_tree tree;
-     "conn", json_of_pairs (pairs_of_vars (leafs_of_tree tree));
-   ]
+  `Assoc  ((List.map (fun (k, f) -> (k, f tree))) [
+     "tree", json_of_tree;
+     "conn", json_of_pairs ++ pairs_of_vars ++ leafs_of_tree;
+     "front", json_of_frontier ++ frontier_of_tree;
+   ])
 
 (* ----------------------------------- *)
 (* Tree Stringification *)
@@ -277,8 +297,6 @@ let string_of_type_tree tree  =
 
 let enum_ordered = enumerator left_extend list_splits
 let enum_linear = enumerator left_extend linear_splits
-
-let (++) f g x = f(g(x))
 
 let data_of_term term =
   let term_tree = tree_of_term term in

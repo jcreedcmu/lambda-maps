@@ -116,12 +116,12 @@ function draw_nodes(d, s, pos) {
   }
 }
 
-function draw_connection(d, y, from, to) {
+function draw_connection(d, y, from, to, color) {
   d.beginPath();
   var m = (from + to) / 2;
   var R = (to - from) / 2;
   d.arc((m + 1/2) * S, y, R * S, 0, Math.PI);
-  d.strokeStyle = light_blue;
+  d.strokeStyle = color;
   d.stroke();
 }
 
@@ -131,11 +131,18 @@ function decode(s) {
   });
 }
 
-function draw_term(d, s, conns) {
+function connection_color(f1, f2) {
+  function subnormal(f) {
+	 return (f[0] == "right" && f[1] == "app") || (f[0] == "left" && f[1] == "neg");
+  }
+  return subnormal(f1) || subnormal(f2) ? light_purple : light_blue;
+}
+
+function draw_term(d, s, conns, front) {
   draw_edges(d, s, {x:0,y:0});
   draw_nodes(d, s, {x:0,y:0});
   _.each(conns, function(conn) {
-	 draw_connection(d, (s.size.y - 1/2) * S, conn[0], conn[1]);
+	 draw_connection(d, (s.size.y - 1/2) * S, conn[0], conn[1], connection_color(front[conn[0]], front[conn[1]]));
   });
 }
 
@@ -154,7 +161,7 @@ _.each(data, function(datum, i) {
   d.save();
   var m = measure_term(term.tree);
   d.translate(BLOCK.x / 2 -  S * m.size.x /2, 0);
-  draw_term(d, m, term.conn);
+  draw_term(d, m, term.conn, term.front);
   d.restore();
 
   d.fillText(decode(datum.type_string), 10, BLOCK.y - 25);
@@ -166,7 +173,7 @@ _.each(data, function(datum, i) {
   d.translate(BLOCK.x, 0);
   var m = measure_term(tp.tree);
   d.translate(BLOCK.x / 2 -  S * m.size.x /2, 0);
-  draw_term(d, m, tp.conn);
+  draw_term(d, m, tp.conn, tp.front);
   d.restore();
 
 });
