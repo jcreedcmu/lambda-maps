@@ -111,6 +111,12 @@ let rec tree_of_type tp = match tp with
   | Tvar {contents = (name, None)} -> Leaf name
   | Tvar {contents = (_, Some inst)} -> tree_of_type inst
 
+(* ----------------------------------- *)
+(* Conversion to Trinity *)
+(* ----------------------------------- *)
+
+type mapsort = MVert | MEdge
+
 type 'a frontier = FLeft of 'a | FRight of 'a
 
 let frontierify_tree tree =
@@ -121,13 +127,19 @@ let frontierify_tree tree =
   in
   go tree None
 
-(* ----------------------------------- *)
-(* Conversion to Trinity *)
-(* ----------------------------------- *)
+type lindex = Lind of int
 
-(* type mapsort = MVert | MEdge *)
+let number_leafs tree =
+  let rec go n tree = match tree with
+    | Bin (opr, lt, rt) ->
+        let (lto, n1) = go n lt in
+        let (rto, n2) = go n1 rt in
+        (Bin(opr, lto, rto), n2)
+    | Leaf data -> (Leaf (data, Lind n), n+1)
+  in
+  fst (go 0 tree)
 
-(* let trin_of_type_tree tree = *)
+(* let trin_of_type_ftree tree = *)
 (*   let counter = ref 0 in *)
 (*   let new_var(counter) = *)
 (*     let c = !counter in *)
@@ -275,12 +287,25 @@ let string_of_tree tree var_namer =
   in
   go (tree_map var_namer (normalize_tree tree))
 
+let lambda = "/"
+let slambda = "/"
+let pos = " ->> "
+let spos = " ->> "
+let neg = " >-> "
+(*
+let lambda = "\\u03bb"
+let slambda = "\\u039b"
+let pos = " \\u21a0 "
+let spos = " \\u27ff "
+let neg = " \\u21a3 "
+ *)
+
 let string_of_term_tree tree  =
   let parenize b x = if b then "(" ^ x ^ ")" else x in
   let rec go t paren_arrow = match t with
     | Leaf s -> s
-    | Bin("lam", lt, rt) -> parenize paren_arrow ("\\u03bb" ^ go lt false ^ "." ^ go rt false)
-    | Bin("slam", lt, rt) -> parenize paren_arrow ("\\u039b" ^ go lt false ^ "." ^ go rt false)
+    | Bin("lam", lt, rt) -> parenize paren_arrow (lambda ^ go lt false ^ "." ^ go rt false)
+    | Bin("slam", lt, rt) -> parenize paren_arrow (slambda ^ go lt false ^ "." ^ go rt false)
     | Bin("app", lt, rt) -> parenize paren_arrow (go lt false ^ " " ^ go rt true)
   in
   go (tree_map term_namer (normalize_tree tree)) false
@@ -289,9 +314,9 @@ let string_of_type_tree tree  =
   let parenize b x = if b then "(" ^ x ^ ")" else x in
   let rec go t paren_arrow = match t with
     | Leaf s -> s
-    | Bin("pos", lt, rt) ->  parenize paren_arrow (go lt true ^ " \\u21a0 " ^ go rt false)
-    | Bin("spos", lt, rt) ->  parenize paren_arrow (go lt true ^ " \\u27ff " ^ go rt false)
-    | Bin("neg", lt, rt) ->  parenize paren_arrow (go lt true ^ " \\u21a3 " ^ go rt false)
+    | Bin("pos", lt, rt) ->  parenize paren_arrow (go lt true ^ pos ^ go rt false)
+    | Bin("spos", lt, rt) ->  parenize paren_arrow (go lt true ^ spos ^ go rt false)
+    | Bin("neg", lt, rt) ->  parenize paren_arrow (go lt true ^ neg ^ go rt false)
   in
   go (tree_map type_namer (normalize_tree tree)) false
 
@@ -320,4 +345,31 @@ let write() =
   Printf.fprintf oc "var data = %s\n" json_string;
   close_out oc
 
-let _ = write()
+            (* let _ = write() *)
+
+type wire = WSubnorm | WAtom
+
+let rec findo f xs = match xs with
+  | [] -> raise Not_found
+  | h::tl -> match f h with Some s -> s | None -> findo f tl
+
+
+let term = List.nth (enum_linear 5 []) 5
+let ttree = tree_of_type (type_of_term term)
+let ntree = number_leafs ttree
+let pairs = pairs_of_vars (leafs_of_tree ttree)
+
+
+let find_partner (Lind n) =
+  findo (fun (a, b) -> if      a = n then Some b
+                       else if b = n then Some a
+                       else None) pairs
+
+let statuses = List.map (fun x -> match x with
+                                  | Some (FLeft "neg") -> WSubnorm
+                                  | _ -> WAtom)
+                        (List.map snd (leafs_of_tree (frontierify_tree ttree)))
+
+let partner_status lind = List.nth statuses (find_partner lind)
+
+let status_tree = tree_map (fun (name, lind) -> (name, partner_status lind)) ntree
