@@ -2,7 +2,7 @@ var PERROW = 7;
 var BLOCK = {x: 120, y: 200};
 var MARGIN = 5;
 var S = 13;
-var DOT_SIZE = 4.7;
+var DOT_SIZE = 3;
 var RIGIDITY = 0.6;
 var LINE_WIDTH = 1.5;
 
@@ -57,6 +57,7 @@ function curve(d, from, to) {
   d.stroke();
 }
 
+var orange = "#fa0";
 var light_blue = "#19f";
 var dark_blue = "#227";
 var light_purple = "#8d1aef"
@@ -65,7 +66,10 @@ var colors = {
   app:  {left: light_blue,    right: light_purple, fill: "#fff", stroke: light_brown },
   slam: {left: light_blue,    right: "#e00", fill: dark_blue },
   lam:  {left: light_blue,    right: "#e00", fill: light_brown },
-  neg:   {left: light_purple,    right: light_blue, fill: "#fff", stroke: light_brown },
+  neg:  {left: light_purple,    right: light_blue, fill: "#fff", stroke: light_brown },
+  lamv: {left: orange,    right: orange, fill: dark_blue },
+  lame: {left: light_purple,    right: orange, fill: light_brown },
+  fuse: {left: light_purple,    right: orange, fill: "#fff", stroke: light_brown },
 }
 
 
@@ -135,6 +139,11 @@ function connection_color(f1, f2) {
   function subnormal(f) {
 	 return (f[0] == "right" && f[1] == "app") || (f[0] == "left" && f[1] == "neg");
   }
+  if (f1[0] == "left" && f1[1] == "lame") return light_purple;
+  if (f1[0] == "left" && f1[1] == "fuse") return light_purple;
+  if (f1[0] == "right" && f1[1] == "fuse") return orange;
+  if (f1[0] == "right" && f1[1] == "lame") return orange;
+  if (f1[1] == "lamv") return orange;
   return subnormal(f1) || subnormal(f2) ? light_purple : light_blue;
 }
 
@@ -152,7 +161,7 @@ _.each(data, function(datum, i) {
   var c = $("<canvas>");
 
   c.appendTo($("body"));
-  c[0].width = 2 * BLOCK.x;
+  c[0].width = 3 * BLOCK.x;
   c[0].height = BLOCK.y;
   var d = c[0].getContext("2d");
 
@@ -167,13 +176,22 @@ _.each(data, function(datum, i) {
   d.fillText(decode(datum.type_string), 10, BLOCK.y - 25);
   d.fillText(decode(datum.term_string), 10, BLOCK.y - 40);
   d.fillStyle = "#aaa";
-  d.fillRect(0,BLOCK.y - 15, BLOCK.x * 2, 1);
+  d.fillRect(0,BLOCK.y - 15, BLOCK.x * 3, 1);
+  d.fillRect(BLOCK.x * 3 - 1,0, 1, BLOCK.y);
 
   d.save();
   d.translate(BLOCK.x, 0);
   var m = measure_term(tp.tree);
   d.translate(BLOCK.x / 2 -  S * m.size.x /2, 0);
   draw_term(d, m, tp.conn, tp.front);
+  d.restore();
+
+  var trin = datum.trin;
+  d.save();
+  d.translate(2 * BLOCK.x, 0);
+  var m = measure_term(trin.tree);
+  d.translate(BLOCK.x / 2 -  S * m.size.x /2, 0);
+  draw_term(d, m, trin.conn, trin.front);
   d.restore();
 
 });

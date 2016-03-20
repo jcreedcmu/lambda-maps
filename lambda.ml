@@ -106,7 +106,8 @@ let type_of_term tree =
   go [] tree
 
 let rec tree_of_type tp = match tp with
-  | PosArrow (top, lt, rt) -> Bin ((match top with LITop -> "spos" | LIMid -> "pos"), tree_of_type lt, tree_of_type rt)
+  (* Eliminating the use of LITop -> "spos" for now *)
+  | PosArrow (top, lt, rt) -> Bin ((match top with LITop -> "pos" | LIMid -> "pos"), tree_of_type lt, tree_of_type rt)
   | NegArrow (lt, rt) -> Bin ("neg", tree_of_type lt, tree_of_type rt)
   | Tvar {contents = (name, None)} -> Leaf name
   | Tvar {contents = (_, Some inst)} -> tree_of_type inst
@@ -166,30 +167,6 @@ let number_leafs tree =
   in
   fst (go 0 tree)
 
-(* let trin_of_type_ftree tree = *)
-(*   let counter = ref 0 in *)
-(*   let new_var(counter) = *)
-(*     let c = !counter in *)
-(*     let () = counter := c + 1 in *)
-(*     Var (c, MVert) *)
-(*   let rec go_sub tree = match tree with *)
-(*     | Bin("spos", lt, rt) -> *)
-(*       let v = new_var() in *)
-(*       let rto = go_norm rt v in *)
-(*       let lto = go_atom lt rto in *)
-(*       Bin("lamv", lto, v) *)
-(*     | Var name -> Var name??? *)
-(*     | _ -> raise Not_found *)
-(*   and go_norm tree vert = match tree with *)
-(*     | Bin ("pos", lt, rt) -> *)
-(*        let rto = go_norm rt vert in *)
-(*        let lto = go_atom lt rto in *)
-(*        lto *)
-(*     | _ -> vert *)
-(*   and go_atom tree vert = match tree with *)
-(*         in *)
-(* go_sub tree *)
-
 let status_tree tp =
   let ttree = tree_of_type tp in
   let ntree = number_leafs ttree in
@@ -207,7 +184,6 @@ let status_tree tp =
   let partner_status lind = List.nth statuses (find_partner lind) in
   tree_map (fun (name, lind) -> (name, partner_status lind)) ntree
 
-
 let trin_of_type tp =
   let counter = ref 0 in
   let new_var(counter) =
@@ -216,12 +192,16 @@ let trin_of_type tp =
     Leaf (c, MVert)
   in
   let rec go_sub tree = match tree with
+    | Leaf(name, _) -> Leaf(name, MEdge)
+    | _ -> let v = new_var counter in Bin("lamv", go_norm tree v, v)
+  and go_norm tree v = match tree with
+    | Bin("pos", lt, Leaf _) -> go_atom lt v
+    | Bin("pos", lt, rt) -> go_atom lt (go_norm rt v)
     | _ -> raise Not_found
-  in
-  let rec go_norm tree = match tree with
-    | _ -> raise Not_found
-  in
-  let rec go_atom tree = match tree with
+  and go_atom tree v = match tree with
+    | Leaf(name, WAtom) -> v
+    | Leaf(name, WSubnorm) -> Bin("lame", Leaf(name, MEdge), v)
+    | Bin("neg", lt, rt) -> Bin("fuse", go_sub lt, go_atom rt v)
     | _ -> raise Not_found
   in
   go_sub (status_tree tp)
@@ -372,41 +352,44 @@ let enum_linear = enumerator left_extend linear_splits
 
 let data_of_term term =
   let term_tree = tree_of_term term in
-  let type_tree = tree_of_type (type_of_term term) in
+  let tp = type_of_term term in
+  let type_tree = tree_of_type tp in
+  let trin_tree = trin_of_type tp in
   `Assoc[
      "term", json_of_tree term_tree;
      "type", json_of_tree type_tree;
+     "trin", json_of_tree trin_tree;
      "term_string", `String (string_of_term_tree term_tree);
      "type_string", `String (string_of_type_tree type_tree);
    ]
 
 let write() =
-  let terms = enum_linear 3 [] in
+  let terms = enum_ordered 4 [] in
   let json = `List (List.map data_of_term terms) in
   let json_string = to_string json in
   let oc = open_out "data.js"  in
   Printf.fprintf oc "var data = %s\n" json_string;
   close_out oc
 
-            (* let _ = write() *)
+let _ = write()
 
 
-let term = List.nth (enum_linear 5 []) 5
-let ttree = tree_of_type (type_of_term term)
-let ntree = number_leafs ttree
-let pairs = pairs_of_vars (leafs_of_tree ttree)
+(* let term = List.nth (enum_linear 5 []) 5 *)
+(* let ttree = tree_of_type (type_of_term term) *)
+(* let ntree = number_leafs ttree *)
+(* let pairs = pairs_of_vars (leafs_of_tree ttree) *)
 
 
-let find_partner (Lind n) =
-  findo (fun (a, b) -> if      a = n then Some b
-                       else if b = n then Some a
-                       else None) pairs
+(* let find_partner (Lind n) = *)
+(*   findo (fun (a, b) -> if      a = n then Some b *)
+(*                        else if b = n then Some a *)
+(*                        else None) pairs *)
 
-let statuses = List.map (fun x -> match x with
-                                  | Some (FLeft "neg") -> WSubnorm
-                                  | _ -> WAtom)
-                        (List.map snd (leafs_of_tree (frontierify_tree ttree)))
+(* let statuses = List.map (fun x -> match x with *)
+(*                                   | Some (FLeft "neg") -> WSubnorm *)
+(*                                   | _ -> WAtom) *)
+(*                         (List.map snd (leafs_of_tree (frontierify_tree ttree))) *)
 
-let partner_status lind = List.nth statuses (find_partner lind)
+(* let partner_status lind = List.nth statuses (find_partner lind) *)
 
-let status_tree = tree_map (fun (name, lind) -> (name, partner_status lind)) ntree
+(* let status_tree = tree_map (fun (name, lind) -> (name, partner_status lind)) ntree *)
