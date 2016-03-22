@@ -281,7 +281,7 @@ function viol(s) {
   });
 }
 
-// XXX I am modifying this function to double-count vlams, to test whether that counts
+// XXX I am modifying this function to double-count elams, to test whether that counts
 // locally orientable rooted maps
 function vertex_and_edge_terminal() {
   function count_v(l, v) {
@@ -296,14 +296,14 @@ function vertex_and_edge_terminal() {
 		}
 	 }
 	 if (l >= 1)
-		rv += 2 * count_v(l-1,v+1);
+		rv += count_v(l-1,v+1);
 	 return rv;
   }
 
   function count_e(l, v) {
 	 var rv = 0;
 	 if (l == 0 && v == 1) return 1;
-	 rv += count_v(l-1,v);
+	 rv += 2 * count_v(l-1,v);
 	 return rv;
   }
   return count_e;
