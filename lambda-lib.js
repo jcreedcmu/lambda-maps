@@ -120,6 +120,9 @@ function c_edge(n, k, e) {
   return rv;
 }
 
+module.exports.c_vert = c_vert;
+module.exports.c_edge = c_edge;
+
 function c_struct(n, k) {
   if (n < 0) return [];
   if (k < 0) return [];
@@ -278,7 +281,8 @@ function viol(s) {
   });
 }
 
-
+// XXX I am modifying this function to double-count vlams, to test whether that counts
+// locally orientable rooted maps
 function vertex_and_edge_terminal() {
   function count_v(l, v) {
 	 var rv = 0;
@@ -292,7 +296,7 @@ function vertex_and_edge_terminal() {
 		}
 	 }
 	 if (l >= 1)
-		rv += count_v(l-1,v+1);
+		rv += 2 * count_v(l-1,v+1);
 	 return rv;
   }
 
@@ -304,6 +308,8 @@ function vertex_and_edge_terminal() {
   }
   return count_e;
 }
+
+module.exports.vertex_and_edge_terminal = vertex_and_edge_terminal();
 
 function linear_subset() {
   function count_atom(l, v) {
