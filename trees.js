@@ -28,6 +28,17 @@ function measure_term(s) {
 				R: offset_term(R,  L.size.x, 1 + (h - R.size.y)),
 			  }
   }
+  if (s.type == "un") {
+	 var B = measure_term(s.B);
+	 var h = B.size.y;
+	 var w = B.size.x;
+	 return {type: "un",
+				subtype: s.subtype,
+				size:{x:w, y:h+1},
+				pos: {x:0, y:0},
+				B: offset_term(B, 0, 1 + (h - B.size.y)),
+			  }
+  }
 }
 
 function fillCircle(d, x, y, r) {
@@ -70,6 +81,7 @@ var colors = {
   lamv: {left: orange,    right: orange, fill: dark_blue },
   lame: {left: light_purple,    right: orange, fill: light_brown },
   fuse: {left: light_purple,    right: orange, fill: "#fff", stroke: light_brown },
+  marker: {left: orange,    right: orange, fill: "#fff", stroke: orange},
 }
 
 
@@ -96,6 +108,15 @@ function draw_edges(d, s, pos) {
 	 draw_edges_off(s.L);
 	 draw_edges_off(s.R);
   }
+  if (s.type == "un") {
+	 var nc = node_center(pos, s);
+	 var Bc = child_center(pos, s, "B");
+
+	 d.strokeStyle = colors[s.subtype].left;
+	 curve(d, nc, Bc);
+
+	 draw_edges_off(s.B);
+  }
 }
 
 function draw_nodes(d, s, pos) {
@@ -104,7 +125,7 @@ function draw_nodes(d, s, pos) {
   }
   if (s.type == "var") {
   }
-  if (s.type == "bin") {
+  if (s.type == "bin" || s.type =="un") {
 	 if (colors[s.subtype].stroke != null) {
 		d.fillStyle = colors[s.subtype].stroke;
 		fillCircle(d, (pos.x + (s.size.x) / 2) * S, (1/2 + pos.y) * S, DOT_SIZE);
@@ -115,8 +136,13 @@ function draw_nodes(d, s, pos) {
  		d.fillStyle = colors[s.subtype].fill;
 		fillCircle(d, (pos.x + (s.size.x ) / 2) * S, (1/2 + pos.y) * S, DOT_SIZE);
 	 }
-	 draw_nodes_off(s.L);
-	 draw_nodes_off(s.R);
+	 if (s.type == "bin") {
+		draw_nodes_off(s.L);
+		draw_nodes_off(s.R);
+	 }
+	 else if (s.type == "un") {
+		draw_nodes_off(s.B);
+	 }
   }
 }
 
@@ -143,6 +169,7 @@ function connection_color(f1, f2) {
   if (f1[0] == "left" && f1[1] == "fuse") return light_purple;
   if (f1[0] == "right" && f1[1] == "fuse") return orange;
   if (f1[0] == "right" && f1[1] == "lame") return orange;
+  if (f1[0] == "left" && f1[1] == "marker") return orange;
   if (f1[1] == "lamv") return orange;
   return subnormal(f1) || subnormal(f2) ? light_purple : light_blue;
 }

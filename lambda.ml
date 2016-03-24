@@ -4,7 +4,7 @@ open Yojson;;
 type lam_info = LITop | LIMid
 type term = Var of int | Lam of lam_info * term | App of term * term
 
-type 'a tree = Bin of string * 'a tree * 'a tree | Leaf of 'a
+type 'a tree = Un of string * 'a tree | Bin of string * 'a tree * 'a tree | Leaf of 'a
 
 (* ----------------------------------- *)
 (* Term Enumeration *)
@@ -129,10 +129,12 @@ let pairs_of_vars vs =
 let rec leafs_of_tree tree = match tree with
   | Leaf n -> [n]
   | Bin (_, lt, rt) -> leafs_of_tree lt @ leafs_of_tree rt
+  | Un (_, bt) -> leafs_of_tree bt
 
 let rec tree_map f tree = match tree with
   | Leaf n -> Leaf (f n)
   | Bin (name, lt, rt) -> Bin(name, tree_map f lt, tree_map f rt)
+  | Un (name, bt) -> Un(name, tree_map f bt)
 
 let rec findo f xs = match xs with
   | [] -> raise Not_found
@@ -150,6 +152,7 @@ type wire = WSubnorm | WAtom
 let frontierify_tree tree =
   let rec gosome tree k = go tree (Some k)
   and     go tree k = match tree with
+    | Un (opr, bt) -> Un (opr, gosome bt (FLeft opr)) (* FLeft I guess ??? *)
     | Bin (opr, lt, rt) -> Bin (opr, gosome lt (FLeft opr), gosome rt (FRight opr))
     | Leaf data -> Leaf (data, k)
   in
@@ -199,7 +202,13 @@ let trin_of_type tp =
     | Bin("pos", lt, rt) -> go_atom lt (go_norm rt v)
     | _ -> raise Not_found
   and go_atom tree v = match tree with
-    | Leaf(name, WAtom) -> v
+    (* XXX In this case, where returning simply v appears to be the
+       right thing for the OM case, am trying inserting a marker to
+       represent the atomic-to-normal coercion in the output position
+       that actually varies to see if we get injectivity. The other
+       half of the image of this coercion is the go_norm Leaf case,
+       where adding a marker seems noninformative. *)
+    | Leaf(name, WAtom) -> Un("marker", v)
     | Leaf(name, WSubnorm) -> Bin("lame", Leaf(name, MEdge), v)
     | Bin("neg", lt, rt) -> Bin("fuse", go_sub lt, go_atom rt v)
     | _ -> raise Not_found
@@ -232,6 +241,12 @@ let tree_of_term term =
   out
 
 let rec json_of_tree x = match x with
+  | Un (name, bt) ->
+     `Assoc [
+        "type", `String "un";
+        "subtype", `String name;
+        "B", json_of_tree bt;
+      ]
   | Bin (name, lt, rt) ->
      `Assoc [
         "type", `String "bin";
