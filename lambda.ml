@@ -315,6 +315,7 @@ let namer defaults numbered n =
 
 let term_namer n = namer ["x"; "y"; "z"; "u"; "v"; "w"; "s"; "t"] "a" n
 let type_namer n = namer ["A"; "B"; "C"; "D"; "E"; "F"; "G"] "X" n
+let trinity_namer n = namer [] "t" n
 
 let string_of_tree tree var_namer =
   let rec go t = match t with
@@ -356,6 +357,18 @@ let string_of_type_tree tree  =
   in
   go (tree_map type_namer (normalize_tree tree)) false
 
+let string_of_trinity_tree tree  =
+  let parenize x = "(" ^ x ^ ")" in
+  let rec go t = match t with
+    | Leaf s -> s
+    | Bin("fuse", lt, rt) ->  parenize (go lt ^ " * " ^ go rt)
+    | Bin("lame", lt, rt) ->  parenize (go lt ^ " V " ^ go rt)
+    | Bin("lamv", lt, rt) ->  parenize (go lt ^ " E " ^ go rt)
+    | Bin("marker", lt, rt) ->  parenize (go lt ^ " M " ^ go rt)
+    | Bin("marker2", lt, rt) ->  parenize (go lt ^ " N " ^ go rt)
+  in
+  go (tree_map trinity_namer (normalize_tree tree))
+
 (* ----------------------------------- *)
 (* Main program *)
 (* ----------------------------------- *)
@@ -374,6 +387,7 @@ let data_of_term term =
      "trin", json_of_tree trin_tree;
      "term_string", `String (string_of_term_tree term_tree);
      "type_string", `String (string_of_type_tree type_tree);
+     "trinity_string", `String (string_of_trinity_tree trin_tree);
    ]
 
 let write() =
@@ -382,6 +396,9 @@ let write() =
   let json_string = to_string json in
   let oc = open_out "data.js"  in
   Printf.fprintf oc "var data = %s\n" json_string;
+  close_out oc;
+  let oc = open_out "data.json"  in
+  Printf.fprintf oc "%s\n" json_string;
   close_out oc
 
 let _ = write()
