@@ -199,17 +199,13 @@ let trin_of_type tp =
     | Leaf(name, _) -> Leaf(name, MEdge)
     | _ -> let v = new_var counter in Bin("lamv", go_norm tree v, v)
   and go_norm tree v = match tree with
-    | Bin("pos", lt, Leaf _) -> go_atom lt v
+    | Leaf(name, _) -> Bin("marker2", Leaf(name, MEdge), v)
     | Bin("pos", lt, rt) -> go_atom lt (go_norm rt v)
     | _ -> raise Not_found
   and go_atom tree v = match tree with
-    (* XXX In this case, where returning simply v appears to be the
-       right thing for the OM case, am trying inserting a marker to
-       represent the atomic-to-normal coercion in the output position
-       that actually varies to see if we get injectivity. The other
-       half of the image of this coercion is the go_norm Leaf case,
-       where adding a marker seems noninformative. *)
-    | Leaf(name, WCoe) -> Un("marker", v)
+    (* XXX Now what I'm doing with this case and the go_norm Leaf case
+       is trying to create two linked markers. *)
+    | Leaf(name, WCoe) -> Bin("marker", Leaf(name, MEdge), v)
     | Leaf(name, WAtom) -> v
     | Leaf(name, WSubnorm) -> Bin("lame", Leaf(name, MEdge), v)
     | Bin("neg", lt, rt) -> Bin("fuse", go_sub lt, go_atom rt v)
@@ -381,7 +377,7 @@ let data_of_term term =
    ]
 
 let write() =
-  let terms = enum_linear 3 [] in
+  let terms = enum_linear 4 [] in
   let json = `List (List.map data_of_term terms) in
   let json_string = to_string json in
   let oc = open_out "data.js"  in

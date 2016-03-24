@@ -1,7 +1,7 @@
 var PERROW = 7;
-var BLOCK = {x: 120, y: 200};
+var BLOCK = {x: 150, y: 200};
 var MARGIN = 5;
-var S = 13;
+var S = 10;
 var DOT_SIZE = 3;
 var RIGIDITY = 0.6;
 var LINE_WIDTH = 1.5;
@@ -72,6 +72,8 @@ var orange = "#fa0";
 var light_blue = "#19f";
 var dark_blue = "#227";
 var light_purple = "#8d1aef"
+var pink = "#e965db"
+var magenta = "#e3258c"
 var light_brown = "#851";
 var colors = {
   app:  {left: light_blue,    right: light_purple, fill: "#fff", stroke: light_brown },
@@ -81,7 +83,8 @@ var colors = {
   lamv: {left: orange,    right: orange, fill: dark_blue },
   lame: {left: light_purple,    right: orange, fill: light_brown },
   fuse: {left: light_purple,    right: orange, fill: "#fff", stroke: light_brown },
-  marker: {left: orange,    right: orange, fill: "#fff", stroke: orange},
+  marker: {left: pink,    right: orange, fill: magenta},
+  marker2: {left: pink,    right: orange, fill: "#fff", stroke: magenta},
 }
 
 
@@ -169,7 +172,10 @@ function connection_color(f1, f2) {
   if (f1[0] == "left" && f1[1] == "fuse") return light_purple;
   if (f1[0] == "right" && f1[1] == "fuse") return orange;
   if (f1[0] == "right" && f1[1] == "lame") return orange;
-  if (f1[0] == "left" && f1[1] == "marker") return orange;
+  if (f1[0] == "left" && f1[1] == "marker") return pink;
+  if (f1[0] == "left" && f1[1] == "marker2") return pink;
+  if (f1[0] == "right" && f1[1] == "marker2") return orange;
+  if (f1[0] == "right" && f1[1] == "marker") return orange;
   if (f1[1] == "lamv") return orange;
   return subnormal(f1) || subnormal(f2) ? light_purple : light_blue;
 }
