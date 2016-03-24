@@ -147,7 +147,7 @@ let rec findo f xs = match xs with
 type mapsort = MVert | MEdge
 
 type 'a frontier = FLeft of 'a | FRight of 'a
-type wire = WSubnorm | WAtom
+type wire = WSubnorm | WAtom | WCoe
 
 let frontierify_tree tree =
   let rec gosome tree k = go tree (Some k)
@@ -181,6 +181,7 @@ let status_tree tp =
   in
   let statuses = List.map (fun x -> match x with
                                     | Some (FLeft "neg") -> WSubnorm
+                                    | Some (FRight "pos") -> WCoe
                                     | _ -> WAtom)
                           (List.map snd (leafs_of_tree (frontierify_tree ttree)))
   in
@@ -208,7 +209,8 @@ let trin_of_type tp =
        that actually varies to see if we get injectivity. The other
        half of the image of this coercion is the go_norm Leaf case,
        where adding a marker seems noninformative. *)
-    | Leaf(name, WAtom) -> Un("marker", v)
+    | Leaf(name, WCoe) -> Un("marker", v)
+    | Leaf(name, WAtom) -> v
     | Leaf(name, WSubnorm) -> Bin("lame", Leaf(name, MEdge), v)
     | Bin("neg", lt, rt) -> Bin("fuse", go_sub lt, go_atom rt v)
     | _ -> raise Not_found
