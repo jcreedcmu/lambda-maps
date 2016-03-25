@@ -202,10 +202,18 @@ _.each(data, function(datum, i) {
 
   d.lineWidth = 2;
 
-  if (!datum.locally_orientable) {
+  if (!datum.regular1) {
 	 d.fillStyle = "#def";
+	 if (!datum.regular2) {
+		d.fillStyle = "#dfd";
+	 }
 	 d.fillRect(0, 0, 3 * BLOCK.x, BLOCK.y);
   }
+  else if (!datum.regular2) {
+	 d.fillStyle = "#ff7";
+	 d.fillRect(0, 0, 3 * BLOCK.x, BLOCK.y);
+  }
+
   if (datum.orientable) {
 	 d.fillStyle = "#fed";
 	 d.fillRect(2 * BLOCK.x, 0, BLOCK.x, BLOCK.y);

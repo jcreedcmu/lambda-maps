@@ -389,11 +389,8 @@ let string_of_trinity_tree tree  =
   go (tree_map trinity_namer (normalize_tree tree))
 
 (* ----------------------------------- *)
-(* Local orientability conjecture *)
+(* Orientability and regularity predicates *)
 (* ----------------------------------- *)
-
-(* Conjecture: a trinity term corresponds to a locally orientable map
-   if each vertex has precisely one marker pair. *)
 
 let count_markers tree =
   List.length (List.filter (fun st -> match st with
@@ -408,20 +405,15 @@ let list_bins tree =
 
 
 
-(* This definition of local orientability has been discredited by
-predicting the existence of 68 rather than 70 non-locally-orientable
-trees of size 4 *)
 
-(* let locally_orientable tree = *)
-(*   let lamvs = List.filter (fun st -> match st with *)
-(*                                      | Bin("lamv", _, _) -> true *)
-(*                                      | _ -> false) (subtrees_of_tree tree) in *)
-
-(*   let counts = List.map count_markers lamvs in *)
-(*   `Bool (List.for_all (fun x -> x = 2) counts) *)
-
-
-
+let regular1 tree =
+  let lamvs = List.filter (fun st -> match st with
+                                     | Bin("lamv", _, _) -> true
+                                     | _ -> false) (subtrees_of_tree tree) in
+  let counts = List.map count_markers lamvs in
+  (* XXX probably actually want to check that the markers match within
+     the same vertex*)
+  List.for_all (fun x -> x = 2) counts
 
 (* has no nontrivial marker loops *)
 let quasiorientable tree =
@@ -461,7 +453,7 @@ let dir_vars tree =
       | (false, false) -> DNone
       | (true, true) -> raise Bidirectional) forward
 
-let locally_orientable dvs =
+let regular2 dvs =
   not (List.exists (fun x -> x = DNone) dvs)
 
 let json_of_var_dir vd = `String (match vd with
@@ -489,13 +481,14 @@ let data_of_term term =
      "term_string", `String (string_of_term_tree term_tree);
      "type_string", `String (string_of_type_tree type_tree);
      "trinity_string", `String (string_of_trinity_tree trin_tree);
-     "locally_orientable", `Bool (locally_orientable dvs);
+     "regular1", `Bool (regular1 trin_tree);
+     "regular2", `Bool (regular2 dvs);
      "orientable", `Bool (quasiorientable trin_tree && List.for_all (fun x -> x = DForward) dvs);
      "dir_vars", `List (List.map json_of_var_dir (dir_vars trin_tree));
    ]
 
 let write() =
-  let terms = enum_linear 4 [] in
+  let terms = enum_linear 5 [] in
   let json = `List (List.map data_of_term terms) in
   let json_string = to_string json in
   let oc = open_out "data.js"  in
