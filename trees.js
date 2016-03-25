@@ -221,7 +221,7 @@ _.each(data, function(datum, i) {
 
   d.fillText(decode(datum.type_string), 10, BLOCK.y - 25);
   d.fillText(decode(datum.term_string), 10, BLOCK.y - 40);
-  d.fillText(decode(datum.trinity_string), 10, BLOCK.y - 55);
+  d.fillText(JSON.stringify(datum.dir_vars), 10, BLOCK.y - 55);
   d.fillStyle = "#aaa";
   d.fillRect(0,BLOCK.y - 15, BLOCK.x * 3, 1);
   d.fillRect(BLOCK.x * 3 - 1,0, 1, BLOCK.y);

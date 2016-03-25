@@ -155,6 +155,10 @@ let rec findo f xs = match xs with
   | [] -> raise Not_found
   | h::tl -> match f h with Some s -> s | None -> findo f tl
 
+let rec filtero f xs = match xs with
+  | [] -> []
+  | h::tl -> match f h with Some s -> s :: filtero f tl | None -> filtero f tl
+
 (* ----------------------------------- *)
 (* Conversion to Trinity *)
 (* ----------------------------------- *)
@@ -402,24 +406,68 @@ let list_bins tree =
                                       | Bin (name, _, _) -> [name]
                                       | _ -> []) (vertex_subtrees_of_tree tree))
 
-let locally_orientable tree =
-  let lamvs = List.filter (fun st -> match st with
-                                     | Bin("lamv", _, _) -> true
-                                     | _ -> false) (subtrees_of_tree tree) in
 
-  let counts = List.map count_markers lamvs in
-  `Bool (List.for_all (fun x -> x = 2) counts)
-  (* `List (List.map (fun x -> `Int x) counts) *)
 
-let orientable tree =
+(* This definition of local orientability has been discredited by
+predicting the existence of 68 rather than 70 non-locally-orientable
+trees of size 4 *)
+
+(* let locally_orientable tree = *)
+(*   let lamvs = List.filter (fun st -> match st with *)
+(*                                      | Bin("lamv", _, _) -> true *)
+(*                                      | _ -> false) (subtrees_of_tree tree) in *)
+
+(*   let counts = List.map count_markers lamvs in *)
+(*   `Bool (List.for_all (fun x -> x = 2) counts) *)
+
+
+
+
+(* has no nontrivial marker loops *)
+let quasiorientable tree =
   let lamvs = List.filter (fun st -> match st with
                                      | Bin("lamv", _, _) -> true
                                      | _ -> false) (subtrees_of_tree tree) in
 
   let bins = List.map list_bins lamvs in
-  `Bool (List.for_all (fun x -> List.hd (List.tl (List.rev x)) = "marker") bins)
-  (* `List (List.map (fun x -> `Int x) counts) *)
+  List.for_all (fun x -> List.hd (List.tl (List.rev x)) = "marker") bins
 
+let directional_variables top bot tree =
+  let lames = filtero (fun st -> match st with
+                                     | Bin(opr, Leaf(name, _), rt) when opr = top -> Some (rt, name)
+                                     | _ -> None) (subtrees_of_tree tree) in
+  let has_forward (tree, name) =
+    List.exists
+      (fun st -> match st with
+                 | Bin(opr, Leaf(name', _), _) when opr = bot -> name = name'
+                 | _ -> false) (subtrees_of_tree tree)
+  in
+  List.map (fun (rt, name) -> (name, has_forward (rt, name))) lames
+
+let forward_variables tree = directional_variables "lame" "fuse" tree
+let backward_variables tree = directional_variables "fuse" "lame" tree
+
+type var_dir = DForward | DBackward | DNone
+exception Bidirectional (* invariant violation: no subnormal edge can be forward and backward *)
+
+let dir_vars tree =
+  let forward = forward_variables tree in
+  let backward = backward_variables tree in
+  List.map (fun (name, is_forward) ->
+      let is_backward = List.assoc name backward in
+      match (is_forward, is_backward) with
+      | (true, false) -> DForward
+      | (false, true) -> DBackward
+      | (false, false) -> DNone
+      | (true, true) -> raise Bidirectional) forward
+
+let locally_orientable dvs =
+  not (List.exists (fun x -> x = DNone) dvs)
+
+let json_of_var_dir vd = `String (match vd with
+                                  | DForward -> "forward"
+                                  | DBackward -> "backward"
+                                  | DNone -> "none")
 
 (* ----------------------------------- *)
 (* Main program *)
@@ -433,6 +481,7 @@ let data_of_term term =
   let tp = type_of_term term in
   let type_tree = tree_of_type tp in
   let trin_tree = trin_of_type tp in
+  let dvs = dir_vars trin_tree in
   `Assoc[
      "term", json_of_tree term_tree;
      "type", json_of_tree type_tree;
@@ -440,8 +489,9 @@ let data_of_term term =
      "term_string", `String (string_of_term_tree term_tree);
      "type_string", `String (string_of_type_tree type_tree);
      "trinity_string", `String (string_of_trinity_tree trin_tree);
-     "locally_orientable", locally_orientable trin_tree;
-     "orientable", orientable trin_tree;
+     "locally_orientable", `Bool (locally_orientable dvs);
+     "orientable", `Bool (quasiorientable trin_tree && List.for_all (fun x -> x = DForward) dvs);
+     "dir_vars", `List (List.map json_of_var_dir (dir_vars trin_tree));
    ]
 
 let write() =
