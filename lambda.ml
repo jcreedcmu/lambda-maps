@@ -436,15 +436,12 @@ let directional_variables top bot tree =
   in
   List.map (fun (rt, name) -> (name, has_forward (rt, name))) lames
 
-let forward_variables tree = directional_variables "lame" "fuse" tree
-let backward_variables tree = directional_variables "fuse" "lame" tree
-
 type var_dir = DForward | DBackward | DNone
 exception Bidirectional (* invariant violation: no subnormal edge can be forward and backward *)
 
-let dir_vars tree =
-  let forward = forward_variables tree in
-  let backward = backward_variables tree in
+let dir_vars d1 d2 tree =
+  let forward = directional_variables d1 d2 tree in
+  let backward = directional_variables d2 d1 tree in
   List.map (fun (name, is_forward) ->
       let is_backward = List.assoc name backward in
       match (is_forward, is_backward) with
@@ -473,7 +470,8 @@ let data_of_term term =
   let tp = type_of_term term in
   let type_tree = tree_of_type tp in
   let trin_tree = trin_of_type tp in
-  let dvs = dir_vars trin_tree in
+  let dvs = dir_vars "lame" "fuse" trin_tree in
+  let mdvs = dir_vars "marker" "marker2" trin_tree in
   `Assoc[
      "term", json_of_tree term_tree;
      "type", json_of_tree type_tree;
@@ -483,12 +481,14 @@ let data_of_term term =
      "trinity_string", `String (string_of_trinity_tree trin_tree);
      "regular1", `Bool (regular1 trin_tree);
      "regular2", `Bool (regular2 dvs);
+     "regular2m", `Bool (regular2 mdvs);
      "orientable", `Bool (quasiorientable trin_tree && List.for_all (fun x -> x = DForward) dvs);
-     "dir_vars", `List (List.map json_of_var_dir (dir_vars trin_tree));
+     "dir_vars", `List (List.map json_of_var_dir dvs);
+     "marker_dir_vars", `List (List.map json_of_var_dir mdvs);
    ]
 
 let write() =
-  let terms = enum_linear 5 [] in
+  let terms = enum_linear 4 [] in
   let json = `List (List.map data_of_term terms) in
   let json_string = to_string json in
   let oc = open_out "data.js"  in

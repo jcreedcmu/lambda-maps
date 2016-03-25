@@ -203,13 +203,14 @@ _.each(data, function(datum, i) {
   d.lineWidth = 2;
 
   if (!datum.regular1) {
-	 d.fillStyle = "#def";
-	 if (!datum.regular2) {
-		d.fillStyle = "#dfd";
-	 }
-	 d.fillRect(0, 0, 3 * BLOCK.x, BLOCK.y);
+  	 d.fillStyle = "#def";
+  	 if (!datum.regular2) {
+  		d.fillStyle = "#cfc";
+  	 }
+  	 d.fillRect(0, 0, 3 * BLOCK.x, BLOCK.y);
   }
-  else if (!datum.regular2) {
+  else
+	 if (!datum.regular2) {
 	 d.fillStyle = "#ff7";
 	 d.fillRect(0, 0, 3 * BLOCK.x, BLOCK.y);
   }
@@ -230,6 +231,7 @@ _.each(data, function(datum, i) {
   d.fillText(decode(datum.type_string), 10, BLOCK.y - 25);
   d.fillText(decode(datum.term_string), 10, BLOCK.y - 40);
   d.fillText(JSON.stringify(datum.dir_vars), 10, BLOCK.y - 55);
+  d.fillText(JSON.stringify(datum.marker_dir_vars), BLOCK.x * 1.5, BLOCK.y - 55);
   d.fillStyle = "#aaa";
   d.fillRect(0,BLOCK.y - 15, BLOCK.x * 3, 1);
   d.fillRect(BLOCK.x * 3 - 1,0, 1, BLOCK.y);
