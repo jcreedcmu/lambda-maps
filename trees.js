@@ -75,16 +75,17 @@ var light_purple = "#8d1aef"
 var pink = "#e965db"
 var magenta = "#e3258c"
 var light_brown = "#851";
+var loop_closer = "#ccc";
 var colors = {
   app:  {left: light_blue,    right: light_purple, fill: "#fff", stroke: light_brown },
   slam: {left: light_blue,    right: "#e00", fill: dark_blue },
   lam:  {left: light_blue,    right: "#e00", fill: light_brown },
   neg:  {left: light_purple,    right: light_blue, fill: "#fff", stroke: light_brown },
-  lamv: {left: orange,    right: orange, fill: dark_blue },
+  lamv: {left: orange,    right: loop_closer, fill: dark_blue },
   lame: {left: light_purple,    right: orange, fill: light_brown },
   fuse: {left: light_purple,    right: orange, fill: "#fff", stroke: light_brown },
   marker: {left: pink,    right: orange, fill: magenta},
-  marker2: {left: pink,    right: orange, fill: "#fff", stroke: magenta},
+  marker2: {left: pink,    right: loop_closer, fill: "#fff", stroke: magenta},
 }
 
 
@@ -174,9 +175,10 @@ function connection_color(f1, f2) {
   if (f1[0] == "right" && f1[1] == "lame") return orange;
   if (f1[0] == "left" && f1[1] == "marker") return pink;
   if (f1[0] == "left" && f1[1] == "marker2") return pink;
-  if (f1[0] == "right" && f1[1] == "marker2") return orange;
+  if (f1[0] == "right" && f1[1] == "marker2") return loop_closer;
   if (f1[0] == "right" && f1[1] == "marker") return orange;
-  if (f1[1] == "lamv") return orange;
+  if (f1[0] == "left" && f1[1] == "lamv") return orange;
+  if (f1[0] == "right" && f1[1] == "lamv") return loop_closer;
   return subnormal(f1) || subnormal(f2) ? light_purple : light_blue;
 }
 
@@ -199,6 +201,12 @@ _.each(data, function(datum, i) {
   var d = c[0].getContext("2d");
 
   d.lineWidth = 2;
+
+  if (!datum.locally_orientable) {
+	 d.fillStyle = "#def";
+	 d.fillRect(0, 0, 3 * BLOCK.x, BLOCK.y);
+  }
+  d.fillStyle = "black";
 
   d.save();
   var m = measure_term(term.tree);

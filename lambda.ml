@@ -131,6 +131,21 @@ let rec leafs_of_tree tree = match tree with
   | Bin (_, lt, rt) -> leafs_of_tree lt @ leafs_of_tree rt
   | Un (_, bt) -> leafs_of_tree bt
 
+let rec subtrees_of_tree tree = tree :: match tree with
+  | Leaf n -> []
+  | Bin (_, lt, rt) -> subtrees_of_tree lt @ subtrees_of_tree rt
+  | Un (_, bt) -> subtrees_of_tree bt
+
+let rec vertex_subtrees_of_tree tree =
+  tree ::
+    (match tree with
+     | Bin ("lamv", lt, _) -> vertex_subtrees_of_tree lt
+     | Bin ("lame", _, rt) -> vertex_subtrees_of_tree rt
+     | Bin ("fuse", _, rt) -> vertex_subtrees_of_tree rt
+     | Bin ("marker", _, rt) -> vertex_subtrees_of_tree rt
+     | Bin ("marker2", _, rt) -> vertex_subtrees_of_tree rt
+     | _ -> [])
+
 let rec tree_map f tree = match tree with
   | Leaf n -> Leaf (f n)
   | Bin (name, lt, rt) -> Bin(name, tree_map f lt, tree_map f rt)
@@ -370,6 +385,28 @@ let string_of_trinity_tree tree  =
   go (tree_map trinity_namer (normalize_tree tree))
 
 (* ----------------------------------- *)
+(* Local orientability conjecture *)
+(* ----------------------------------- *)
+
+(* Conjecture: a trinity term corresponds to a locally orientable map
+   if each vertex has precisely one marker pair. *)
+
+let count_markers tree =
+  List.length (List.filter (fun st -> match st with
+                                      | Bin ("marker", _, _) -> true
+                                      | Bin ("marker2", _, _) -> true
+                                      | _ -> false) (vertex_subtrees_of_tree tree))
+let locally_orientable tree =
+  let lamvs = List.filter (fun st -> match st with
+                                     | Bin("lamv", _, _) -> true
+                                     | _ -> false) (subtrees_of_tree tree) in
+
+  let counts = List.map count_markers lamvs in
+  `Bool (List.for_all (fun x -> x = 2) counts)
+  (* `List (List.map (fun x -> `Int x) counts) *)
+
+
+(* ----------------------------------- *)
 (* Main program *)
 (* ----------------------------------- *)
 
@@ -388,10 +425,11 @@ let data_of_term term =
      "term_string", `String (string_of_term_tree term_tree);
      "type_string", `String (string_of_type_tree type_tree);
      "trinity_string", `String (string_of_trinity_tree trin_tree);
+     "locally_orientable", locally_orientable trin_tree;
    ]
 
 let write() =
-  let terms = enum_linear 4 [] in
+  let terms = enum_linear 3 [] in
   let json = `List (List.map data_of_term terms) in
   let json_string = to_string json in
   let oc = open_out "data.js"  in
