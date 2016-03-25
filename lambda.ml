@@ -214,13 +214,13 @@ let trin_of_type tp =
     | Leaf(name, _) -> Leaf(name, MEdge)
     | _ -> let v = new_var counter in Bin("lamv", go_norm tree v, v)
   and go_norm tree v = match tree with
-    | Leaf(name, _) -> Bin("marker2", Leaf(name, MEdge), v)
+    | Leaf(name, _) -> v
     | Bin("pos", lt, rt) -> go_atom lt (go_norm rt v)
     | _ -> raise Not_found
   and go_atom tree v = match tree with
     (* XXX Now what I'm doing with this case and the go_norm Leaf case
        is trying to create two linked markers. *)
-    | Leaf(name, WCoe) -> Bin("marker", Leaf(name, MEdge), v)
+    | Leaf(name, WCoe) -> Un("marker", v)
     | Leaf(name, WAtom) -> v
     | Leaf(name, WSubnorm) -> Bin("lame", Leaf(name, MEdge), v)
     | Bin("neg", lt, rt) -> Bin("fuse", go_sub lt, go_atom rt v)
@@ -380,6 +380,7 @@ let string_of_trinity_tree tree  =
     | Bin("lame", lt, rt) ->  parenize (go lt ^ " V " ^ go rt)
     | Bin("lamv", lt, rt) ->  parenize (go lt ^ " E " ^ go rt)
     | Bin("marker", lt, rt) ->  parenize (go lt ^ " M " ^ go rt)
+    | Un("marker", bt) ->  parenize (" M " ^ go bt)
     | Bin("marker2", lt, rt) ->  parenize (go lt ^ " N " ^ go rt)
   in
   go (tree_map trinity_namer (normalize_tree tree))
