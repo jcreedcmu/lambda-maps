@@ -206,6 +206,11 @@ _.each(data, function(datum, i) {
 	 d.fillStyle = "#def";
 	 d.fillRect(0, 0, 3 * BLOCK.x, BLOCK.y);
   }
+  if (datum.orientable) {
+	 d.fillStyle = "#fed";
+	 d.fillRect(2 * BLOCK.x, 0, BLOCK.x, BLOCK.y);
+  }
+
   d.fillStyle = "black";
 
   d.save();

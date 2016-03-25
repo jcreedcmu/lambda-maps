@@ -396,6 +396,12 @@ let count_markers tree =
                                       | Bin ("marker", _, _) -> true
                                       | Bin ("marker2", _, _) -> true
                                       | _ -> false) (vertex_subtrees_of_tree tree))
+
+let list_bins tree =
+  List.flatten (List.map (fun st -> match st with
+                                      | Bin (name, _, _) -> [name]
+                                      | _ -> []) (vertex_subtrees_of_tree tree))
+
 let locally_orientable tree =
   let lamvs = List.filter (fun st -> match st with
                                      | Bin("lamv", _, _) -> true
@@ -403,6 +409,15 @@ let locally_orientable tree =
 
   let counts = List.map count_markers lamvs in
   `Bool (List.for_all (fun x -> x = 2) counts)
+  (* `List (List.map (fun x -> `Int x) counts) *)
+
+let orientable tree =
+  let lamvs = List.filter (fun st -> match st with
+                                     | Bin("lamv", _, _) -> true
+                                     | _ -> false) (subtrees_of_tree tree) in
+
+  let bins = List.map list_bins lamvs in
+  `Bool (List.for_all (fun x -> List.hd (List.tl (List.rev x)) = "marker") bins)
   (* `List (List.map (fun x -> `Int x) counts) *)
 
 
@@ -426,10 +441,11 @@ let data_of_term term =
      "type_string", `String (string_of_type_tree type_tree);
      "trinity_string", `String (string_of_trinity_tree trin_tree);
      "locally_orientable", locally_orientable trin_tree;
+     "orientable", orientable trin_tree;
    ]
 
 let write() =
-  let terms = enum_linear 3 [] in
+  let terms = enum_linear 4 [] in
   let json = `List (List.map data_of_term terms) in
   let json_string = to_string json in
   let oc = open_out "data.js"  in
