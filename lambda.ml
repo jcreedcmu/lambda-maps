@@ -488,7 +488,7 @@ let data_of_term term =
    ]
 
 let write() =
-  let terms = enum_linear 4 [] in
+  let terms = enum_linear 5 [] in
   let json = `List (List.map data_of_term terms) in
   let json_string = to_string json in
   let oc = open_out "data.js"  in

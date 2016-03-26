@@ -1,0 +1,11 @@
+=== 2016.03.26
+
+I notice at this commit, after running the ocaml,
+
+jq  '([.[] | select((.regular1 | not))] | length)' data.json
+yields 2144 non-regular terms.
+and
+dyck(2, 6) = 102
+and 2144 + 102 = 2246
+
+4896 (from A258222 "locally orientable maps") + 2246 = 7142 (from A262301 "linear terms")
