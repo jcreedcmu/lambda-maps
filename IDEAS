@@ -9,3 +9,12 @@ dyck(2, 6) = 102
 and 2144 + 102 = 2246
 
 4896 (from A258222 "locally orientable maps") + 2246 = 7142 (from A262301 "linear terms")
+
+so try to compare this to
+
+297 (from A258222 "locally orientable maps") + 70 = 367 (from A262301 "linear terms")
+jq gives 68 at one size smaller, so we're looking for dyck to be 2, I guess?
+
+one size smaller than that:
+24 (from A258222 "locally orientable maps") + 2 = 26 (from A262301 "linear terms")
+jq gives 2, so dyck is 0.
