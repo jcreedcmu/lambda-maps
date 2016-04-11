@@ -29,7 +29,70 @@
 \def\lam{\lambda}
 \def\E{\mathcal E}
 \def\V{\mathcal V}
+\def\coe#1{\{z^{#1}\}}
 \begin{document}
+
+Start by defining the list type
+$$[x] = {1\over 1- x} = \sum_{n\ge 0} x^n$$
+and making the coinductive definition
+$$M^k = (x+k)[z M^{k+1}]$$
+which is well-defined because it's productive on powers of $z$.
+%% Could think of this also as the haskell type
+%% $$ M(k, z, x) = (x + k) \times [ z \times M(\mathtt{Maybe}\ k, z, x)]$$
+%% which has data $x$ at vertices and $z$ at edges. Now define
+$$P^k = (x + k) + z(M^k)^2 + zM^k + 2z^2M^k_z$$
+and we want to show that $M^k = P^k$.
+We'll look at individual $z$-coefficients.
+%% The general form of the $n^{th}$ power
+%% of $z$ in these is
+%% $$\coe n M^k = (x+k)\sum_{n_1 + n_2 = n} (\coe {n_1} (M^{k+1})^{n_2} )$$
+%% $$\coe n P^k = (x+k)[n=0] + \coe{n-1} (M^k)^2 + \coe{n-1} (M^k) + 2\coe{n-2}M^k_z$$
+
+We have at least that
+$$\coe 0 M^k = \coe 0 P^k = x + k$$
+What about generally showing
+$$\coe n M^k = \coe n P^k \eqno(*)$$
+for some $n > 0$? Assume inductively that it does hold for all smaller $n$,
+for all (even bigger) $k$. Let $y$ abbreviate $x+k$, and let $H$ abbreviate $M^{k+1}$.
+
+Staring at $M^k$'s definition, we have
+$$ \coe n M^k = \coe n y[z H]$$
+$$ = y\sum_{0 < m \le n} (\coe {n-m} H^{m } )$$
+$$ = y\sum_{0 < m \le n} (\coe {n-m} (P^{k+1})^{m } )\eqno(i.h.)$$
+$$ = y\sum_{0 < m \le n} (\coe {n-m}  ((y + 1) + zH^2 + zH + 2z^2H_z)^m )$$
+$$ = y\sum_{0 < m \le n} \left(\sum_{|v| = m \atop \Sigma v = n-m} \prod_{i=1}^m \coe {v_i} ( (y + 1) + zH^2 + zH + 2z^2H_z )\right)$$
+but on the other hand looking at $P^k$ we find
+$$\coe n P^k = \coe n ( y + z(M^k)^2 + zM^k + 2z^2M^k_z)$$
+$$= \coe n ( y + z(y[z H])^2 + z(y[z H]) + 2z^2y(H + z M_z^{k+1})[z H]^2)$$
+$$= y\coe n ( 1 + zy[z H]^2 + z[z H] + 2z^2(H + z M_z^{k+1})[z H]^2)$$
+$$= y\coe {n-1}  (y[z H]^2 + [z H] + 2z(H + z M_z^{k+1})[z H]^2)$$
+So combining these and dividing by $y$, our proof obligation is
+$$\sum_{0 < m \le n} \left(\sum_{|v| = m \atop \Sigma v = n-m} \prod_{i=1}^m \coe {v_i} ( (y + 1) + zH^2 + zH + 2z^2H_z )\right)$$
+$$=\coe {n-1}  (y[z H]^2 + [z H] + 2z(H + z H_z)[z H]^2)$$
+
+Try $n=2$
+$$ \left(   \coe 0 H^2 +   \coe 0 H  \right)+ \left(y + 1\right)^2=(2y + 3) \coe 0 H  $$
+$$ \left(   (y + 1)^2 +   (y + 1)  \right)+ \left(y + 1\right)^2=(2y + 3) (y + 1)  $$
+$$ \left(   (y + 1)^2 +   (y + 1)  \right)+ \left(y + 1\right)^2=(2y + 3) (y + 1)  $$
+$$2y^2 + 5y + 3 = 2y^2 + 5y + 3$$
+
+
+
+\subsection{$z$-derivative of $M^k$}
+Recall that $[z]_z = [z]^2$ and so $[F]_z = F_z [F]^2$.
+
+So if $M^k = (x+k)[z M^{k+1}]$, then
+$$M^k_z = (x+k)[z M^{k+1}]_z$$
+$$ = (x+k)(z M^{k+1})_z[z M^{k+1}]^2$$
+$$ = (x+k)(M^{k+1} + z M_z^{k+1})[z M^{k+1}]^2$$
+
+\subsection{Recalling Facts}
+Let's recall some facts about extracting coefficients from power series:
+$$\coe 0 (F^n) = (\coe 0 F)^n$$
+$$\coe 1 (F^n) = n(\coe 1 F)(\coe 0 F)^{n-1}$$
+$$\coe k(F G) = \sum_{k_1 + k_2 = k} \coe {k_1} F\coe {k_2} G$$
+$$\coe k (F^n) = \sum_{\sum \vec k = k} \prod_i \coe{k_i}F$$
+\vfil\eject
 $$
 \begin{tabular}{r@{ $::= $ }l}
   Normal $N$&$ \lambda x . N \celse R$\\
