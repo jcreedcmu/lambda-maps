@@ -48,35 +48,40 @@ We'll look at individual $z$-coefficients.
 %% $$\coe n M^k = (x+k)\sum_{n_1 + n_2 = n} (\coe {n_1} (M^{k+1})^{n_2} )$$
 %% $$\coe n P^k = (x+k)[n=0] + \coe{n-1} (M^k)^2 + \coe{n-1} (M^k) + 2\coe{n-2}M^k_z$$
 
-We have at least that
-$$\coe 0 M^k = \coe 0 P^k = x + k$$
-What about generally showing
-$$\coe n M^k = \coe n P^k \eqno(*)$$
-for some $n > 0$? Assume inductively that it does hold for all smaller $n$,
-for all (even bigger) $k$. Let $y$ abbreviate $x+k$, and let $H$ abbreviate $M^{k+1}$.
+\vfil\eject
+Actually, nevermind, I think I've grokked it by now.
 
-Staring at $M^k$'s definition, we have
-$$ \coe n M^k = \coe n y[z H]$$
-$$ = y\sum_{0 < m \le n} (\coe {n-m} H^{m } )$$
-$$ = y\sum_{0 < m \le n} (\coe {n-m} (P^{k+1})^{m } )\eqno(i.h.)$$
-$$ = y\sum_{0 < m \le n} (\coe {n-m}  ((y + 1) + zH^2 + zH + 2z^2H_z)^m )$$
-$$ = y\sum_{0 < m \le n} \left(\sum_{|v| = m \atop \Sigma v = n-m} \prod_{i=1}^m \coe {v_i} ( (y + 1) + zH^2 + zH + 2z^2H_z )\right)$$
-but on the other hand looking at $P^k$ we find
-$$\coe n P^k = \coe n ( y + z(M^k)^2 + zM^k + 2z^2M^k_z)$$
-$$= \coe n ( y + z(y[z H])^2 + z(y[z H]) + 2z^2y(H + z M_z^{k+1})[z H]^2)$$
-$$= y\coe n ( 1 + zy[z H]^2 + z[z H] + 2z^2(H + z M_z^{k+1})[z H]^2)$$
-$$= y\coe {n-1}  (y[z H]^2 + [z H] + 2z(H + z M_z^{k+1})[z H]^2)$$
-So combining these and dividing by $y$, our proof obligation is
-$$\sum_{0 < m \le n} \left(\sum_{|v| = m \atop \Sigma v = n-m} \prod_{i=1}^m \coe {v_i} ( (y + 1) + zH^2 + zH + 2z^2H_z )\right)$$
-$$=\coe {n-1}  (y[z H]^2 + [z H] + 2z(H + z H_z)[z H]^2)$$
+I think I prefer spelling out their argument as follows:
+Define a predicate $\beta_k$ on formal power series by
+$$\beta_k F := \qquad F = (x + k) + zF^2 + zF + 2z^2 {\partial \over \partial z}F$$
+By finitely unrolling it out to whichever power of $z$ we're
+interested in, we can see for each $k$ there is a unique power series
+$F$ that satisfies $\beta_k F$. Call it $M_k$.
 
-Try $n=2$
-$$ \left(   \coe 0 H^2 +   \coe 0 H  \right)+ \left(y + 1\right)^2=(2y + 3) \coe 0 H  $$
-$$ \left(   (y + 1)^2 +   (y + 1)  \right)+ \left(y + 1\right)^2=(2y + 3) (y + 1)  $$
-$$ \left(   (y + 1)^2 +   (y + 1)  \right)+ \left(y + 1\right)^2=(2y + 3) (y + 1)  $$
-$$2y^2 + 5y + 3 = 2y^2 + 5y + 3$$
+Now we want to show for all k that
+$$M_k = (x+k)[z M_{k+1}]$$
+Here I'm using the list constructor $[F]$ to stand for the
+geometric series $1 / (1 - F)$.
 
-
+By universal property, it suffices to show $\beta_k((x+k)[z M_{k+1}])$. I'm going to make some abbreviations
+to shorten things, $H := M_{k+1}$ and $q := x+k$. Our proof obligation is now
+$$\beta_k(q[zH])$$
+and we can transform it by expanding the definition of $\beta_k$:
+$$ q[zH] = q + z(q[zH])^2 + z(q[zH]) + 2z^2 {\partial \over \partial z}(q[zH])$$
+computing the derivative:
+$$ q[zH] = q + z(q[zH])^2 + z(q[zH]) + 2z^2 q[zH]^2(zH_z + H)$$
+multiplying by $1-zH$ to cancel out a few copies of $[zH]$:
+$$ q = q(1-zH) + zq^2[zH] + zq + 2z^2 q[zH](zH_z + H)$$
+$$ qzH = zq^2[zH] + zq + 2z^2 q[zH](zH_z + H)$$
+dividing by $qz$:
+$$ H = q[zH] + 1 + 2z [zH](zH_z + H)$$
+multiplying by $1 - zH$ again:
+$$ H - zH^2 = q + 1-zH + 2z (zH_z + H)$$
+$$ H = q + 1 + zH^2 + zH + 2z^2 H_z $$ which is just
+$\beta_{k+1}M_{k+1}$, which we know by the definition of $M_{k+1}$.
+The essential thing that confused me while reading the paper, I think, was that
+this algebraic reasoning runs backwards from proof obligation to known
+fact, not forward the other way around. \vfil\eject
 
 \subsection{$z$-derivative of $M^k$}
 Recall that $[z]_z = [z]^2$ and so $[F]_z = F_z [F]^2$.
@@ -91,7 +96,10 @@ Let's recall some facts about extracting coefficients from power series:
 $$\coe 0 (F^n) = (\coe 0 F)^n$$
 $$\coe 1 (F^n) = n(\coe 1 F)(\coe 0 F)^{n-1}$$
 $$\coe k(F G) = \sum_{k_1 + k_2 = k} \coe {k_1} F\coe {k_2} G$$
-$$\coe k (F^n) = \sum_{\sum \vec k = k} \prod_i \coe{k_i}F$$
+$$\coe k (F^n) = \sum_{|v| = n \atop \Sigma v = k} \prod_i \coe{v_i}F$$
+$$\coe n [zF] = \sum_{m \ge 0}  \coe n F^m = \sum_{m \ge 0}  \coe n ((zF)^m)$$
+$$=\sum_{m \ge 0} (\coe {n-m} F^{m } ) =\sum_{0 < m \le n} (\coe {n-m} F^{m } )$$
+$$ =\sum_{0 < m \le n}    \sum_{|v| = m \atop \Sigma v = n-m } \prod_i \coe{v_i}F$$
 \vfil\eject
 $$
 \begin{tabular}{r@{ $::= $ }l}
