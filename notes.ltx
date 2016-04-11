@@ -52,36 +52,40 @@ We'll look at individual $z$-coefficients.
 Actually, nevermind, I think I've grokked it by now.
 
 I think I prefer spelling out their argument as follows:
-Define a predicate $\beta_k$ on formal power series by
-$$\beta_k F := \qquad F = (x + k) + zF^2 + zF + 2z^2 {\partial \over \partial z}F$$
+Define a predicate $\beta_G$ on formal power series by
+$$\beta_G F := \qquad F = G + zF^2 + zF + 2z^2 {\partial \over \partial z}F$$
 By finitely unrolling it out to whichever power of $z$ we're
-interested in, we can see for each $k$ there is a unique power series
-$F$ that satisfies $\beta_k F$. Call it $M_k$.
+interested in, we can see for any type $G$ there is a unique power series
+$F$ that satisfies $\beta_G F$. Call it $M_G$.
 
-Now we want to show for all k that
-$$M_k = (x+k)[z M_{k+1}]$$
+Now we want to show for any constant $G$ (i.e. specifically $G_z =0$) that
+$$M_G = G[z M_{G+1}]$$
 Here I'm using the list constructor $[F]$ to stand for the
 geometric series $1 / (1 - F)$.
 
-By universal property, it suffices to show $\beta_k((x+k)[z M_{k+1}])$. I'm going to make some abbreviations
-to shorten things, $H := M_{k+1}$ and $q := x+k$. Our proof obligation is now
-$$\beta_k(q[zH])$$
-and we can transform it by expanding the definition of $\beta_k$:
-$$ q[zH] = q + z(q[zH])^2 + z(q[zH]) + 2z^2 {\partial \over \partial z}(q[zH])$$
-computing the derivative:
-$$ q[zH] = q + z(q[zH])^2 + z(q[zH]) + 2z^2 q[zH]^2(zH_z + H)$$
+By universal property, it suffices to show $\beta_G(G[z M_{G+1}])$. I'm going to abbreviate
+$H := M_{G+1}$. Our proof obligation is now
+$$\beta_G(G[zH])$$
+and we can transform it by expanding the definition of $\beta_G$:
+$$ G[zH] = G + z(G[zH])^2 + z(G[zH]) + 2z^2 {\partial \over \partial z}(G[zH])$$
+computing the derivative: (here's where we use $G_z = 0$)
+$$ G[zH] = G + z(G[zH])^2 + z(G[zH]) + 2z^2 G[zH]^2(zH_z + H)$$
 multiplying by $1-zH$ to cancel out a few copies of $[zH]$:
-$$ q = q(1-zH) + zq^2[zH] + zq + 2z^2 q[zH](zH_z + H)$$
-$$ qzH = zq^2[zH] + zq + 2z^2 q[zH](zH_z + H)$$
-dividing by $qz$:
-$$ H = q[zH] + 1 + 2z [zH](zH_z + H)$$
+$$ G = G(1-zH) + zG^2[zH] + zG + 2z^2 G[zH](zH_z + H)$$
+$$ GzH = zG^2[zH] + zG + 2z^2 G[zH](zH_z + H)$$
+dividing by $Gz$:
+$$ H = G[zH] + 1 + 2z [zH](zH_z + H)$$
 multiplying by $1 - zH$ again:
-$$ H - zH^2 = q + 1-zH + 2z (zH_z + H)$$
-$$ H = q + 1 + zH^2 + zH + 2z^2 H_z $$ which is just
-$\beta_{k+1}M_{k+1}$, which we know by the definition of $M_{k+1}$.
+$$ H - zH^2 = G + 1-zH + 2z (zH_z + H)$$
+$$ H = G + 1 + zH^2 + zH + 2z^2 H_z $$ which is just
+$\beta_{G+1}M_{G+1}$, which we know by the definition of $M_{G+1}$.
 The essential thing that confused me while reading the paper, I think, was that
 this algebraic reasoning runs backwards from proof obligation to known
-fact, not forward the other way around. \vfil\eject
+fact, not forward the other way around.
+
+If $H$ is maps with $G+1$ at vertices, then
+$G[zH]$ is maps with $G$ at vertices.
+\vfil\eject
 
 \subsection{$z$-derivative of $M^k$}
 Recall that $[z]_z = [z]^2$ and so $[F]_z = F_z [F]^2$.
