@@ -32,33 +32,16 @@
 \def\coe#1{\{z^{#1}\}}
 \begin{document}
 
-Start by defining the list type
-$$[x] = {1\over 1- x} = \sum_{n\ge 0} x^n$$
-and making the coinductive definition
-$$M^k = (x+k)[z M^{k+1}]$$
-which is well-defined because it's productive on powers of $z$.
-%% Could think of this also as the haskell type
-%% $$ M(k, z, x) = (x + k) \times [ z \times M(\mathtt{Maybe}\ k, z, x)]$$
-%% which has data $x$ at vertices and $z$ at edges. Now define
-$$P^k = (x + k) + z(M^k)^2 + zM^k + 2z^2M^k_z$$
-and we want to show that $M^k = P^k$.
-We'll look at individual $z$-coefficients.
-%% The general form of the $n^{th}$ power
-%% of $z$ in these is
-%% $$\coe n M^k = (x+k)\sum_{n_1 + n_2 = n} (\coe {n_1} (M^{k+1})^{n_2} )$$
-%% $$\coe n P^k = (x+k)[n=0] + \coe{n-1} (M^k)^2 + \coe{n-1} (M^k) + 2\coe{n-2}M^k_z$$
+\section{Reconstructing Theorem 3 of Arqu\`es \& Ber\'aud}
 
-\vfil\eject
-Actually, nevermind, I think I've grokked it by now.
-
-I think I prefer spelling out their argument as follows:
 Define a predicate $\beta_G$ on formal power series by
 $$\beta_G F := \qquad F = G + zF^2 + zF + 2z^2 {\partial \over \partial z}F$$
 By finitely unrolling it out to whichever power of $z$ we're
 interested in, we can see for any type $G$ there is a unique power series
-$F$ that satisfies $\beta_G F$. Call it $M_G$.
+$F$ that satisfies $\beta_G F$. Call it $M_G$. It's maps on oriented surfaces
+where there's data $G$ attached at each vertex, and data $z$ attached at each edge.
 
-Now we want to show for any constant $G$ (i.e. specifically $G_z =0$) that
+Now we want to show for any type $G$ that's constant with respect to $z$ that
 $$M_G = G[z M_{G+1}]$$
 Here I'm using the list constructor $[F]$ to stand for the
 geometric series $1 / (1 - F)$.
@@ -78,13 +61,142 @@ $$ H = G[zH] + 1 + 2z [zH](zH_z + H)$$
 multiplying by $1 - zH$ again:
 $$ H - zH^2 = G + 1-zH + 2z (zH_z + H)$$
 $$ H = G + 1 + zH^2 + zH + 2z^2 H_z $$ which is just
-$\beta_{G+1}M_{G+1}$, which we know by the definition of $M_{G+1}$.
-The essential thing that confused me while reading the paper, I think, was that
-this algebraic reasoning runs backwards from proof obligation to known
-fact, not forward the other way around.
+$\beta_{G+1}M_{G+1}$, which we know by having defined $M_{G+1}$ to have that property.
 
-If $H$ is maps with $G+1$ at vertices, then
-$G[zH]$ is maps with $G$ at vertices.
+\subsection{Bijective Interpretation}
+The proof above goes `backwards' from proof obligation to known fact, and is liberal
+with doing operations that make sense on formal power series with rational coefficients.
+We're going to now try to go forwards, and do only things that make sense as type isomorphisms.
+
+\begin{lemma}[List-1]\\
+ (Informal, Suggestive) If $H + MK \cong A + M + HK$, then $H \cong [K]A + M$.
+\end{lemma}
+
+\begin{proof}
+  Suppose we have a bijection $f : H + MK \cong A + M + HK$.
+  If we're given an $h : H$, then hit it with $f$. If it gives $HK$,
+  maintain a stack of $K$ and keep hitting the $H$. If we get an $M$,
+  pop off the stack and hit the $MK$, returning the $M$ if we underflow the stack.
+  If we get an $A$, return it.
+\cqed
+\end{proof}
+
+What actually makes this process guaranteed to terminate? In our case, $M$ is finite and $K$ has no
+constant term, so that seems useful.
+
+\begin{lemma}[List-2]\\
+ If $GK \cong M$, then $G[K] \cong G + M[K]$.
+\end{lemma}
+
+\begin{proof}
+$G[K] \cong G(1 + K[K]) \cong G + GK[K] \cong G + M[K]$.
+\cqed
+\end{proof}
+
+\begin{lemma}
+If type $H$ is maps with data $G+1$ at vertices, then
+$G[zH]$ is maps with data $G$ at vertices.
+\end{lemma}
+
+\begin{proof}
+   We construct a bijection.
+  By assumption,
+  $$H \cong G + 1 + zH^2 + zH + 2z^2 H_z $$
+  We can add $zH$ to both sides
+  $$H + zH \cong G + 1 + zH^2 + 2zH + 2z^2 H_z $$
+  and now Lemma~List-1 applies, ($M = 1, K = zH, A =  G + 2zH + 2z^2 H_z$) yielding
+  $$H  \cong [zH](G + 2zH + 2z^2 H_z) + 1 $$
+  Multiply by $Gz$ to get
+  $$GzH  \cong Gz[zH](G + 2zH + 2z^2 H_z) + Gz $$
+  Use Lemma~List-2 ($M = Gz[zH](G + 2zH + 2z^2 H_z) + Gz, K = zH$) to see
+  $$G[zH] \cong G + (Gz[zH](G + 2zH + 2z^2 H_z) + Gz)[zH]$$
+  $$ \cong G + z(G[zH])^2 + 2z^2G[zH]^2(H + z H_z) + z(G[zH])$$
+  $$ \cong G + z(G[zH])^2 + z(G[zH]) + 2z^2(G[zH])_z $$
+  which shows $G[zH]$ to be the type of $G$-vertex maps.
+
+  Somewhat more explicitly, consider $(g, \vec s) : G[zH]$. If $\vec s$ is empty, this is the
+  vertex map with data $g$. Otherwise $s = (e, h) :: t$ with $(e, h) : zH$.
+  Now $h$ is a map. We're going to pull off all the isthmically attached submaps
+  of $h$ until we can't, making a stack of $zH$. If we get the exceptional branch of the vertex case,
+  we take the head of the stack and return it if we can, returning $()$ otherwise.
+  If we get a nonisthmic attachment, or $G$-data, we return it {\em with} the current stack.
+  So we have computed $$h' : [zH](G + 2zH + 2z^2 H_z) + 1$$
+  Remember that we still have $g :G$, $e : z$, and $t : [zH]$ sitting around.\\
+  That $+1$ at the end where we immediately stack underflow becomes the root-loop case $zG[zH]$.\\
+  The $[zH]G$ case where we hit some $G$-data becomes the isthmic attachment $z(G[zH])^2$.\\
+  The cases $(2zH + 2z^2 H_z)[zH]$ (which come from $1$-data, or else nonisthmic attachment)
+  become $2z^2[zH]^2(H + z H_z)$ which is the non-loop nonisthmic attachment case.
+\cqed
+\end{proof}
+
+\vfil\eject
+\subsection{Coming From Terms}
+Consider the grammar
+$$
+\begin{tabular}{r@{ $::= $ }l}
+  Normal $N$&$ \lambda x . R$\\
+  Atomic $R$&$ R\ N \celse x$\\
+\end{tabular}
+$$
+where variable occurrences are not linear but unrestricted. This grammar forces
+lambdas to {\em not} occur in sequences. A single lambda here is equivalent to a sequence
+of consecutive linear lambdas that permit local exchange. The number of terms with $n$ free variables
+and $a$ applications satisfies
+$$N_{na} = R_{(n+1)a}$$
+$$R_{na} = n + \sum_{a_1 + a_2 = a} R_{na_1} N_{na_2}$$
+so
+$$R_{na} = n[a=0] + \sum_{a_1 + a_2 = a+1} R_{na_1} R_{(n+1)a_2}$$
+so defining the generating function for atomic terms with $n$
+free variables $R(n) = \sum_{a \ge 0} z^a R_{na}$ we get the familiar Dyck equation
+$$R(n) = \sum_{a \ge 0} z^a R_{na} = n + \sum_{a \ge 0} z^a \sum_{a_1 + a_2 = a} R_{na_1} R_{(n+1)a_2}$$
+$$= n + zR(n)R(n+1)$$
+so the head of a spine is a choice from $n$, and the arguments are each $z R(n+1)$.
+This is a special case of the type $G[zH]$, where $G = n$ and $H = R(n+1)$.
+
+Let $M(V, E)$ be the type of maps on orientable surfaces where
+vertices carry data $V$ and edges carry data $E$. I'm going to give an
+explicit function (abbreviating $H := M(G+1,z)$)
+$$f : G[zH] \to M(G, z)$$
+which really ought to be a bijection, though I haven't carefully checked yet.
+What $f$ does is produce a map from `an atomic term' where the head is a $G$ and the arguments
+are maps. So to go all the way from a real atomic term to a map we just need to inductively
+turn our arguments into maps first, then apply $f$. The way we define $f$ is by recourse
+to thinking of $M(G, z)$ as being defined by the universal property of Tutte-decomposition.
+So we'll actually define
+$$\tau : G[zH] \to G + z(G[zH])^2 +  z(G[zH]) + 2z^2 (G[zH])_z$$
+and let that account for how to decompose a term of type $G[zH]$ as if it were a map.
+\vfil\eject
+And before defining $\tau$ let's define a fiddly technical helper function
+about which I don't have great intuition yet
+$$\phi : H \to [zH] \to [zH](G + 2zH + 2z^2 H_z) + 1$$
+The first argument to $\phi$ is sort of a stack.
+Here's how to compute $\phi\ h\ s$. Tutte decomposition on $h$ gives
+us $(G + 1) + zH^2 +  zH + 2z^2 H_z$. Let's split cases over that data:
+\begin{itemize}
+\item[Vertex Case 1:] $g:G$. Return $(s, g) : [zH]G$.
+\item[Vertex Case 2:] $*:1$. If the stack $s$ is empty, return $*:1$. Otherwise
+  $s = s_{hd}::s_{tl}$, so return $(s_{tl}, (0, s_{hd})) : [zH](2(zH))$.
+\item[Isthmic Case:] $(e, h_1, h_2):zH^2$. Push and recursively call
+  $\phi\ h_1\  ((e, h_2)::s)$
+\item[Loop Case:] $(e, h_0):zH$. Return $(s, (1, (e, h_0))) : [zH](2(zH))$.
+\item[Nonisthmic Case:] $q:2z^2H_z$. Return $(s, q) : [zH](2z^2H_z)$.
+\end{itemize}
+Now we're ready to define
+$$\tau : G[zH] \to G + z(G[zH])^2 +  z(G[zH]) + 2z^2 (G[zH])_z$$
+as follows. Let $(g, \vec s) : G[zH]$ be the argument to
+$\tau$. If $\vec s$ is empty, return the
+single-vertex map with data $g : G$. Otherwise $s = (e, h) :: t$ with
+$(e, h) : zH$. Split cases on
+$$\phi\ h\ [] : [zH](G + 2zH + 2z^2 H_z) + 1$$
+remembering that we still have $g :G$, $e : z$, and $t : [zH]$
+sitting around.
+\begin{itemize}
+\item[Case:] $(s', g') : [zH]G$. Return $(e, (g, t), (g', s')) : z(G[zH])^2$.
+\item[Case:] $* : 1$. Return $(e, (g, t)) : zG[zH]$.
+\item[Case:] $q : [zH](2zH + 2z^2H_z)$. Do the necessary work to transform
+  $q, g, t$ into $(b, e', d) : 2(z (G[zH])_z)$. Return $(b, e, e', d) : 2z^2(G[zH])_z$.
+  \end{itemize}
+
 \vfil\eject
 
 \subsection{$z$-derivative of $M^k$}
