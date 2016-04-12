@@ -143,12 +143,12 @@ lambdas to {\em not} occur in sequences. A single lambda here is equivalent to a
 of consecutive linear lambdas that permit local exchange. The number of terms with $n$ free variables
 and $a$ applications satisfies
 $$N_{na} = R_{(n+1)a}$$
-$$R_{na} = n + \sum_{a_1 + a_2 = a+1} R_{na_1} N_{na_2}$$
+$$R_{na} = n + \sum_{a_1 + a_2 = a-1} R_{na_1} N_{na_2}$$
 so
-$$R_{na} = n[a=0] + \sum_{a_1 + a_2 = a+1} R_{na_1} R_{(n+1)a_2}$$
+$$R_{na} = n[a=0] + \sum_{a_1 + a_2 = a-1} R_{na_1} R_{(n+1)a_2}$$
 so defining the generating function for atomic terms with $n$
 free variables $R(n) = \sum_{a \ge 0} z^a R_{na}$ we get the familiar Dyck equation
-$$R(n) = \sum_{a \ge 0} z^a R_{na} = n + \sum_{a \ge 0} z^a \sum_{a_1 + a_2 = a+1} R_{na_1} R_{(n+1)a_2}$$
+$$R(n) = \sum_{a \ge 0} z^a R_{na} = n + \sum_{a \ge 0} z^a \sum_{a_1 + a_2 = a-1} R_{na_1} R_{(n+1)a_2}$$
 $$= n + zR(n)R(n+1)$$
 so the head of a spine is a choice from $n$, and the arguments are each $z R(n+1)$.
 This is a special case of the type $G[zH]$, where $G = n$ and $H = R(n+1)$.
