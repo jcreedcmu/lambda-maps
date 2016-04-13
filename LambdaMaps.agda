@@ -43,7 +43,7 @@ data term (G : Set) : ℕ -> Set where
 
 data zhlist (G : Set) : ℕ -> Set where
  zhnil : zhlist G zero
- zhcons : {n1 n2 : ℕ} -> map (opt G) n1 -> zhlist G n2 -> zhlist G (succ (n1 + n2))
+ zhcons : (n1 n2 : ℕ) -> map (opt G) n1 -> zhlist G n2 -> zhlist G (succ (n1 + n2))
 
 data φres (G : Set) : ℕ -> Set where
  φr-vert : {n : ℕ} -> zhlist G n -> G -> φres G n
@@ -65,8 +65,8 @@ data _≡_ : {A : Set} -> A -> A -> Set1 where
 φ : {G : Set} -> {n1 n2 : ℕ} -> map (opt G) n1 -> zhlist G n2 -> φres G (n1 + n2)
 φ (vert (some g)) s = φr-vert s g
 φ (vert none) zhnil = φr-underflow
-φ (vert none) (zhcons h s) = φr-nonisth s h none
-φ {_} {_} {n2} (isth {n3} {n4} h1 h2) s = φres-cong (φ h1 (zhcons h2 s)) (+lemma n3 n2 n4)
+φ (vert none) (zhcons _ _ h s) = φr-nonisth s h none
+φ {_} {_} {n2} (isth {n3} {n4} h1 h2) s = φres-cong (φ h1 (zhcons _ _ h2 s)) (+lemma n3 n2 n4)
 φ (nonisth h ν) s = φr-nonisth s h (some ν)
 
 data τres (G : Set) (Q : ℕ -> Set) : ℕ -> Set where
@@ -77,33 +77,69 @@ data τres (G : Set) (Q : ℕ -> Set) : ℕ -> Set where
 data gzh (G : Set) : ℕ -> Set where
  ! : {n : ℕ} -> G -> zhlist G n -> gzh G n
 
+predelay' : {n : ℕ} -> (m : ℕ) -> choice n -> choice (m + n)
+predelay' zero c = c
+predelay' (succ m) c = wait (predelay' m c)
+
+choice-cong : {n1 n2 : ℕ} -> choice n1 -> n1 ≡ n2 -> choice n2
+choice-cong χ refl = χ
+
+predelay : {n : ℕ} -> (m : ℕ) -> choice n -> choice (n + m)
+predelay {n} m χ = choice-cong (predelay' m χ) (+comm m n)
+
+postdelay : {n : ℕ} -> (m : ℕ) -> choice n -> choice (n + m)
+postdelay m here = here
+postdelay m (wait c) = (wait (postdelay m c))
+
+assoc : (n1 n2 n3 : ℕ) -> succ (n1 + (n3 + n2)) ≡ succ ((n1 + n3) + n2)
+assoc = {!!}
+
+zhlist-cong : {G : Set} (n1 n2 : ℕ) -> zhlist G n1 -> n1 ≡ n2 -> zhlist G n2
+zhlist-cong n1 .n1 zh refl = zh
+
+zhconcat : {G : Set} (n1 n2 : ℕ) -> zhlist G n1 -> zhlist G n2 -> zhlist G (n1 + n2)
+zhconcat .zero n2 zhnil w = w
+zhconcat .(succ (n1 + n3)) n2 (zhcons n1 n3 x zh1) zh2 =
+ zhlist-cong _ _ (zhcons _ _ x (zhconcat _ _ zh1 zh2)) (assoc n1 n2 n3)
+
 aux : {n1 n2 : ℕ} {G : Set} -> G -> φres G n1 -> zhlist G n2 -> τres G (gzh G) (succ (n1 + n2))
 aux {_} {n2} g1 (φr-vert s1 g2) s2 = τr-isth {_} {_} {n2} (! g1 s1) (! g2 s2)
-aux g (φr-nonisth x y z) s = τr-nonisth {!!} (nonloop {!!} {!!})
 {-
+This case is the trickiest of this function. We have
 g   : .G
 x   : zhlist .G .n1
 y   : map (opt .G) .n3
 z   : opt (nichoice .n3)
 s   : zhlist .G .n2
 
+and in
+τr-nonisth ?2 (nonloop ?3 ?4)
+we need
 ?2 : gzh .G (succ (.n3 + .n1) + .n2)
 ?3 : choice (succ (.n3 + .n1) + .n2)
 ?4 : bool
 
-going from g : G, e : z, and s : [zH], and we're in the special case of φres
-where we have x : zhlist G n1, y : map (opt G) n2, z : opt (nichoice n2) = 2n2 + 2
-
-I'm vaguely aware that z([H])_z --- which is a n * [H] when it has n edges,
-should be equal to [H]^2 zH_z)... maybe this breaks down after all.
-
+The ?2 is built from g, x, y, s.
+The number of choices in z : opt (nichoice .n3) is 2 * n3 + 2,
+which feeds into the (n3 + 1) branches of ?3, and we siphon off a bool.
+The n1 and n2 branches of ?3 correspond to other ways of constructing the
+list
+x @ [y] @ s
 -}
-aux g φr-underflow s = τr-nonisth (! g s) loop
+aux {_} {n2} g (φr-nonisth {n1} {n3} x y z) s =
+  τr-nonisth (! g (zhconcat (succ (n3 + n1)) n2 (zhcons n3 n1 y x) s))
+             (process-choices n1 n2 n3 z)
+  where
+  process-choices : (n1 n2 n3 : ℕ) -> opt (nichoice n3) -> nichoice (succ (n3 + n1) + n2)
+  process-choices n1 n2 n3 (some loop) = nonloop here true
+  process-choices n1 n2 n3 (some (nonloop ν β)) = nonloop (wait (predelay n2 (postdelay n1 ν))) β
+  process-choices n1 n2 n3 none = nonloop here false
 
+aux g φr-underflow s = τr-nonisth (! g s) loop
 
 τ : {G : Set} {n : ℕ} -> gzh G n -> τres G (gzh G) n
 τ (! g zhnil) = τr-vert g
-τ {G} (! g (zhcons {n1} {n2} h s)) = aux g h' s where
+τ {G} (! g (zhcons n1 n2 h s)) = aux g h' s where
  h' : φres G n1
  h' = φres-cong (φ h zhnil) (+comm n1 zero)
 
@@ -114,6 +150,3 @@ aux g φr-underflow s = τr-nonisth (! g s) loop
 --  match zero (τr-vert g) = vert g
 --  match _ (τr-isth {_} {n1} {n2} q1 q2) = isth (match n1 (f _ q1)) (match n2 (f _ q2))
 --  match _ (τr-nonisth {n} q ν) = nonisth (match n (f _ q)) ν
-
--- τ2 : {G : Set} {n : ℕ} -> gzh G n -> map G n
--- τ2 {G} {n} x = make-map G (gzh G) ? ? ?
