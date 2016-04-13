@@ -24,10 +24,13 @@ _+_ : ℕ -> ℕ -> ℕ
 zero + N = N
 (succ N) + M = succ (N + M)
 
+data choice : ℕ -> Set where
+ here : {n : ℕ} -> choice (succ n)
+ wait : {n : ℕ} -> choice n -> choice (succ n)
+
 data nichoice : ℕ -> Set where
- loop : nichoice zero
- cw : {n : ℕ} -> nichoice n -> nichoice (succ n)
- ccw : {n : ℕ} -> nichoice n -> nichoice (succ n)
+ loop : {n : ℕ} -> nichoice n
+ nonloop : {n : ℕ} -> choice n -> bool -> nichoice n
 
 data map (G : Set) : ℕ -> Set where
  vert : G -> map G zero
@@ -76,11 +79,41 @@ data gzh (G : Set) : ℕ -> Set where
 
 aux : {n1 n2 : ℕ} {G : Set} -> G -> φres G n1 -> zhlist G n2 -> τres G (gzh G) (succ (n1 + n2))
 aux {_} {n2} g1 (φr-vert s1 g2) s2 = τr-isth {_} {_} {n2} (! g1 s1) (! g2 s2)
-aux g (φr-nonisth x x₁ x₂) s = {!!}
-aux g φr-underflow s = {!!}
+aux g (φr-nonisth x y z) s = τr-nonisth {!!} (nonloop {!!} {!!})
+{-
+g   : .G
+x   : zhlist .G .n1
+y   : map (opt .G) .n3
+z   : opt (nichoice .n3)
+s   : zhlist .G .n2
+
+?2 : gzh .G (succ (.n3 + .n1) + .n2)
+?3 : choice (succ (.n3 + .n1) + .n2)
+?4 : bool
+
+going from g : G, e : z, and s : [zH], and we're in the special case of φres
+where we have x : zhlist G n1, y : map (opt G) n2, z : opt (nichoice n2) = 2n2 + 2
+
+I'm vaguely aware that z([H])_z --- which is a n * [H] when it has n edges,
+should be equal to [H]^2 zH_z)... maybe this breaks down after all.
+
+-}
+aux g φr-underflow s = τr-nonisth (! g s) loop
+
 
 τ : {G : Set} {n : ℕ} -> gzh G n -> τres G (gzh G) n
 τ (! g zhnil) = τr-vert g
 τ {G} (! g (zhcons {n1} {n2} h s)) = aux g h' s where
  h' : φres G n1
  h' = φres-cong (φ h zhnil) (+comm n1 zero)
+
+{- having some problems convincing agda of termination here: -}
+-- make-map : (G : Set) (Q : ℕ -> Set) -> ((n : ℕ) -> Q n -> τres G Q n) -> (n : ℕ) -> Q n -> map G n
+-- make-map G Q f n q = match n (f _ q) where
+--  match : (n : ℕ) -> (τres G Q n) -> map G n
+--  match zero (τr-vert g) = vert g
+--  match _ (τr-isth {_} {n1} {n2} q1 q2) = isth (match n1 (f _ q1)) (match n2 (f _ q2))
+--  match _ (τr-nonisth {n} q ν) = nonisth (match n (f _ q)) ν
+
+-- τ2 : {G : Set} {n : ℕ} -> gzh G n -> map G n
+-- τ2 {G} {n} x = make-map G (gzh G) ? ? ?
