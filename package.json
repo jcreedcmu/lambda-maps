@@ -1,0 +1,22 @@
+{
+  "name": "lambda-maps",
+  "version": "1.0.0",
+  "description": "There's some really cool correspondences between lambda terms and combinatorial maps. Not maps in the sense of mappings --- lambda-terms *are* those, obviously, but maps in the sense of \"every planar map can be 4-colored\".",
+  "main": "agda-user.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/jcreedcmu/lambda-maps.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jcreedcmu/lambda-maps/issues"
+  },
+  "homepage": "https://github.com/jcreedcmu/lambda-maps#readme",
+  "dependencies": {
+    "amdefine": "^1.0.0"
+  }
+}

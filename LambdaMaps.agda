@@ -1,12 +1,19 @@
 module LambdaMaps where
 
-open import Data.Nat
--- open import Induction.WellFounded
--- open import Induction.Nat
+data ℕ : Set where
+ zero : ℕ
+ suc : ℕ -> ℕ
 
--- data ℕ : Set where
---  zero : ℕ
---  succ : ℕ -> ℕ
+_+_ : ℕ -> ℕ -> ℕ
+zero + N = N
+(suc N) + M = suc (N + M)
+
+data _≤′_ (m : ℕ) : ℕ → Set where
+  ≤′-refl :                         m ≤′ m
+  ≤′-step : ∀ {n} (m≤′n : m ≤′ n) → m ≤′ suc n
+
+_<′_ : ℕ → ℕ → Set
+m <′ n = suc m ≤′ n
 
 data opt (A : Set) : Set where
   some : A -> opt A
@@ -15,20 +22,6 @@ data opt (A : Set) : Set where
 data bool : Set where
  true : bool
  false : bool
-
-data list (A : Set) : Set where
-  cons : A -> list A -> list A
-  nil : list A
-
--- _+_ : ℕ -> ℕ -> ℕ
--- zero + N = N
--- (succ N) + M = succ (N + M)
-
--- -- used for termination
--- data cℕ : ℕ -> Set where
---  czero : cℕ zero
---  csuc : {n : ℕ} -> cℕ n -> cℕ (suc n)
---  cplus : {n1 n2 : ℕ} -> cℕ n1 -> cℕ n2 -> cℕ (n1 + n2)
 
 data choice : ℕ -> Set where
  here : {n : ℕ} -> choice (suc n)
@@ -98,6 +91,9 @@ data τres (G : Set) (Q : ℕ -> Set) : ℕ -> Set where
  τr-vert : G -> τres G Q zero
  τr-isth : {n n1 n2 : ℕ} -> Q n1 -> Q n2 -> τres G Q (suc (n1 + n2))
  τr-nonisth : {n : ℕ} -> Q n -> nichoice n -> τres G Q (suc n)
+
+data unit : Set where
+ • : unit
 
 data gzh (G : Set) : ℕ -> Set where
  ! : {n : ℕ} -> G -> zhlist G n -> gzh G n
@@ -211,3 +207,10 @@ make-map G Q f n q = match n (gen-acc n) (f q) where
 
 use-τ : (G : Set) (n : ℕ) -> gzh G n -> map G n
 use-τ G n term = make-map G (gzh G) τ n term
+
+module Foo where
+ example : gzh unit (suc (suc zero))
+ example = ! • (zhcons _ _ (vert (some •)) (zhcons _ _ (vert none) zhnil))
+
+ example-out : map unit (suc (suc zero))
+ example-out = use-τ unit (suc (suc zero)) example
