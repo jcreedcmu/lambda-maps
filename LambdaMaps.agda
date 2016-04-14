@@ -59,11 +59,30 @@ data φres (G : Set) : ℕ -> Set where
 data _≡_ : {A : Set} -> A -> A -> Set1 where
  refl : {A : Set} {a : A} -> a ≡ a
 
+_∘_ : {A : Set} {a b c : A} -> a ≡ b -> b ≡ c -> a ≡ c
+refl ∘ refl = refl
+
+cong : {A B : Set} {x y : A} (f : A → B) -> x ≡ y -> f x ≡ f y
+cong f refl = refl
+
+sym : {A : Set} {a b : A} -> a ≡ b -> b ≡ a
+sym refl = refl
+
 +lemma : (n1 n2 n3 : ℕ) -> (n1 + suc (n3 + n2)) ≡ (suc ((n1 + n3) + n2))
-+lemma = {!!}
++lemma zero n2 n3 = refl
++lemma (suc n1) n2 n3 = cong suc (+lemma n1 n2 n3)
+
++comm/2 : (n : ℕ) -> n ≡ (n + zero)
++comm/2 zero = refl
++comm/2 (suc n) = cong suc (+comm/2 n)
+
++comm/1 : (n1 n2 : ℕ) -> suc (n1 + n2) ≡ (n1 + suc n2)
++comm/1 zero n2 = refl
++comm/1 (suc n1) n2 = cong suc (+comm/1 n1 n2)
 
 +comm : (n1 n2 : ℕ) -> (n1 + n2) ≡ (n2 + n1)
-+comm = {!!}
++comm zero n1 = +comm/2 n1
++comm (suc n1) n2 = cong suc (+comm n1 n2) ∘ +comm/1 n2 n1
 
 φres-cong : {G : Set} {n1 n2 : ℕ} -> φres G n1 -> n1 ≡ n2 -> φres G n2
 φres-cong pf refl = pf
@@ -97,8 +116,9 @@ postdelay : {n : ℕ} -> (m : ℕ) -> choice n -> choice (n + m)
 postdelay m here = here
 postdelay m (wait c) = (wait (postdelay m c))
 
-assoc : (n1 n2 n3 : ℕ) -> suc (n1 + (n3 + n2)) ≡ suc ((n1 + n3) + n2)
-assoc = {!!}
+assoc : (n1 n2 n3 : ℕ) -> (n1 + (n3 + n2)) ≡ ((n1 + n3) + n2)
+assoc zero n2 n3 = refl
+assoc (suc n1) n2 n3 = cong suc (assoc n1 n2 n3)
 
 zhlist-cong : {G : Set} (n1 n2 : ℕ) -> zhlist G n1 -> n1 ≡ n2 -> zhlist G n2
 zhlist-cong n1 .n1 zh refl = zh
@@ -106,7 +126,7 @@ zhlist-cong n1 .n1 zh refl = zh
 zhconcat : {G : Set} (n1 n2 : ℕ) -> zhlist G n1 -> zhlist G n2 -> zhlist G (n1 + n2)
 zhconcat .zero n2 zhnil w = w
 zhconcat .(suc (n1 + n3)) n2 (zhcons n1 n3 x zh1) zh2 =
- zhlist-cong _ _ (zhcons _ _ x (zhconcat _ _ zh1 zh2)) (assoc n1 n2 n3)
+ zhlist-cong _ _ (zhcons _ _ x (zhconcat _ _ zh1 zh2)) (cong suc (assoc n1 n2 n3))
 
 aux : {n1 n2 : ℕ} {G : Set} -> G -> φres G n1 -> zhlist G n2 -> τres G (gzh G) (suc (n1 + n2))
 aux {_} {n2} g1 (φr-vert s1 g2) s2 = τr-isth {_} {_} {n2} (! g1 s1) (! g2 s2)
@@ -163,11 +183,21 @@ gen-acc n = acc (gen-acc-aux n)
   gen-acc-aux .(suc (suc y)) (suc y) ≤′-refl = gen-acc (suc y)
   gen-acc-aux ._ (suc y) (≤′-step le) = gen-acc-aux _ (suc y) le
 
-≤-lemma-1 : (n1 n2 : ℕ) -> suc n1 ≤′ suc (n1 + n2)
-≤-lemma-1 = {!!}
+≤-0 : (n : ℕ) -> zero ≤′ n
+≤-0 zero = ≤′-refl
+≤-0 (suc n) = ≤′-step (≤-0 n)
 
-≤-lemma-2 : (n1 n2 : ℕ) -> suc n2 ≤′ suc (n1 + n2)
-≤-lemma-2 = {!!}
+≤-suc : {n1 n2 : ℕ} -> n1 ≤′ n2 -> suc n1 ≤′ suc n2
+≤-suc ≤′-refl = ≤′-refl
+≤-suc(≤′-step x) = ≤′-step (≤-suc x)
+
+≤-lemma-1 : (n1 n2 : ℕ) -> n1 ≤′ (n1 + n2)
+≤-lemma-1 zero n2 = ≤-0 n2
+≤-lemma-1 (suc n1) n2 = ≤-suc (≤-lemma-1 n1 n2)
+
+≤-lemma-2 : (n1 n2 : ℕ) -> n2 ≤′ (n1 + n2)
+≤-lemma-2 zero n2 = ≤′-refl
+≤-lemma-2 (suc n1) n2 = ≤′-step (≤-lemma-2 n1 n2)
 
 make-map : (G : Set) (Q : ℕ -> Set) -> ({n : ℕ} -> Q n -> τres G Q n) -> (n : ℕ) -> Q n -> map G n
 make-map G Q f n q = match n (gen-acc n) (f q) where
@@ -175,8 +205,8 @@ make-map G Q f n q = match n (gen-acc n) (f q) where
  match zero α (τr-vert g) = vert g
  match _ (acc ψ) (τr-isth {_} {n1} {n2} q1 q2) =
        isth {G} {n1} {n2}
-            (match n1 (ψ n1 (≤-lemma-1 n1 n2)) (f q1))
-            (match n2 (ψ n2 (≤-lemma-2 n1 n2)) (f q2))
+            (match n1 (ψ n1 (≤-suc (≤-lemma-1 n1 n2))) (f q1))
+            (match n2 (ψ n2 (≤-suc (≤-lemma-2 n1 n2))) (f q2))
  match _ (acc ψ) (τr-nonisth {n} q ν) = nonisth (match n (ψ n ≤′-refl) (f q)) ν
 
 use-τ : (G : Set) (n : ℕ) -> gzh G n -> map G n
