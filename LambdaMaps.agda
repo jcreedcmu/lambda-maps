@@ -19,6 +19,13 @@ data opt (A : Set) : Set where
   some : A -> opt A
   none : opt A
 
+data list (A : Set) : Set where
+  cons : A -> list A -> list A
+  nil : list A
+
+-- data Kv (A B : Set) : Set where
+--   _⇒_ : A -> B -> Kv A B
+
 data bool : Set where
  true : bool
  false : bool
@@ -36,9 +43,9 @@ data map (G : Set) : ℕ -> Set where
  isth : {n1 n2 : ℕ} -> map G n1 -> map G n2 -> map G (suc (n1 + n2))
  nonisth : {n : ℕ} -> map G n -> nichoice n -> map G (suc n)
 
-data term (G : Set) : ℕ -> Set where
- head : G -> term G zero
- app : {n1 n2 : ℕ} -> term G n1 -> term (opt G) n2 -> term G (suc (n1 + n2))
+-- data term (G : Set) : ℕ -> Set where
+--  head : G -> term G zero
+--  app : {n1 n2 : ℕ} -> term G n1 -> term (opt G) n2 -> term G (suc (n1 + n2))
 
 data zhlist (G : Set) : ℕ -> Set where
  zhnil : zhlist G zero
@@ -208,9 +215,61 @@ make-map G Q f n q = match n (gen-acc n) (f q) where
 use-τ : (G : Set) (n : ℕ) -> gzh G n -> map G n
 use-τ G n term = make-map G (gzh G) τ n term
 
-module Foo where
- example : gzh unit (suc (suc zero))
- example = ! • (zhcons _ _ (vert (some •)) (zhcons _ _ (vert none) zhnil))
+----------------------------------
 
- example-out : map unit (suc (suc zero))
- example-out = use-τ unit (suc (suc zero)) example
+postulate String : Set
+{-# BUILTIN STRING String #-}
+
+data List (A : Set) : Set where
+  []   : List A
+  _,_ : A → List A → List A
+infixr 5 _,_
+
+data Json : Set where
+ jnat : ℕ -> Json
+ jstr : String -> Json
+ jarr : List Json -> Json
+-- jobj : List (Kv String Json) -> Json
+
+nat_of_choice : {n : ℕ} -> choice n -> ℕ
+nat_of_choice here = zero
+nat_of_choice (wait χ) = suc (nat_of_choice χ)
+
+json_of_nichoice : {n : ℕ} -> nichoice n -> Json
+json_of_nichoice loop = jstr "loop"
+json_of_nichoice (nonloop χ β) = jarr (jnat (nat_of_choice χ) , jstr (namebool β), [])
+ where
+ namebool : bool -> String
+ namebool true = "cw"
+ namebool false = "ccw"
+
+{- don't seem to need this generality -}
+-- json_of_map : {G : Set} {n : ℕ} -> (G -> Json) ->  map G n -> Json
+-- json_of_map json_of_g (vert x) = jarr (jstr "vert" , json_of_g x , [])
+-- json_of_map json_of_g (isth h₁ h₂) =
+--   jarr (jstr "isth" , json_of_map json_of_g h₁ ,
+--                       json_of_map json_of_g h₂ , [])
+-- json_of_map json_of_g (nonisth h ν) =
+--   jarr (jstr "nonisth" , json_of_map json_of_g h ,
+--                          json_of_nichoice ν , [])
+
+json_of_unit_map : {n : ℕ} -> map unit n -> Json
+json_of_unit_map (vert _) = jstr "vert"
+json_of_unit_map (isth h₁ h₂) =
+  jarr (jstr "isth" , json_of_unit_map h₁ ,
+                      json_of_unit_map h₂ , [])
+json_of_unit_map (nonisth h ν) =
+  jarr (jstr "nonisth" , json_of_unit_map h ,
+                         json_of_nichoice ν , [])
+
+module Foo where
+ example1 : Json
+ example1 = json_of_unit_map (use-τ unit _ (! • eterm))
+  where
+  eterm = zhcons _ _ (vert none) (zhcons _ _ (vert (some •)) (zhcons _ _ (vert (some •)) zhnil))
+
+ amap : map unit (suc (suc (suc zero)))
+ amap = nonisth (isth (isth (vert •) (vert •)) (vert •)) (nonloop (wait here) true)
+
+ example2 : Json
+ example2 = json_of_unit_map amap
