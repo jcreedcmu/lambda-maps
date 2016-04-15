@@ -362,20 +362,24 @@ _>>_ : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B : Set ℓ2} -> Opt A -> (A -> B) ->
 o >> f = opt_map f o
 infixl 5 _>>_
 
+_>>>_ : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B : Set ℓ2} -> Opt A -> (A -> Opt B) -> Opt B
+none >>> f = none
+some x >>> f with f x
+... | some y = some y
+... | none = none
+infixl 5 _>>>_
+
 _!>_ : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B : A → Set ℓ2} -> Opt A -> ((x : A) -> B x) -> Opt (Σ A B)
 none !> f = none
 (some x) !> f = some (σ x (f x))
 infixl 5 _!>_
 
-
 raw_of_bare : (n : ℕ) -> BareTerm -> Opt (RawTerm n)
 raw_of_bare n (bhead db) = mk_choice n db >> rhead
-raw_of_bare n (bapp hd tl) with raw_of_bare n hd | raw_of_bare (suc n) tl
-... | none | _ = none
-... | some _ | none = none
-... | some hh | some tt = some (rapp hh tt)
-
-
+raw_of_bare n (bapp hd tl) =
+ raw_of_bare n hd >>> \ hh ->
+ raw_of_bare (suc n) tl >> \ tt ->
+ rapp hh tt
 
 map_π₁ : {ℓ1 ℓ2 ℓ3 : Level} {A : Set ℓ1} {C : Set ℓ2} {B : C → Set ℓ3} ->
          (f : A → C) ->  Σ A (\ x -> B (f x)) -> Σ C B
@@ -396,14 +400,10 @@ unitchoice (wait ())
 map_of_bare : BareTerm -> Opt (Σ ℕ (Map Unit))
 map_of_bare b =
   raw_of_bare (suc zero) b
-                   !> term_of_raw
-                   >> map_π₂ (term_map unitchoice)
-                   >> map_π₁ apps_of_raw
-                   >> map_π₂ map_of_unit_term
-
-
-
-
+          !> term_of_raw
+          >> map_π₂ (term_map unitchoice)
+          >> map_π₁ apps_of_raw
+          >> map_π₂ map_of_unit_term
 
 {------------------------------------
  Examples
