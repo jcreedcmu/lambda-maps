@@ -90,7 +90,7 @@ choiceopt n (wait χ) = some χ
 mk_choice : (n : ℕ) -> ℕ -> Opt(Choice n)
 mk_choice (suc n) (suc m) = opt_map wait (mk_choice n m)
 mk_choice (suc n) zero = some here
-mk_choice z m = none
+mk_choice zero m = none
 
 unitchoice : Choice (suc zero) -> Unit
 unitchoice here = •
