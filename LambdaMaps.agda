@@ -43,7 +43,7 @@ data List (A : Set) : Set where
 infixr 5 _,_
 
 {------------------------------------
- Equality and lemmas
+ Equality: defn and lemmas
  ------------------------------------}
 
 data _≡_ : {A : Set} -> A -> A -> Set1 where
@@ -62,7 +62,7 @@ subst : {A : Set} (B : A → Set) {a1 a2 : A} -> B a1 -> a1 ≡ a2 -> B a2
 subst _ x refl = x
 
 {------------------------------------
- Some ℕ lemmas
+ Some lemmas about + and ≤
  ------------------------------------}
 
 +lemma : (n1 n2 n3 : ℕ) -> (n1 + suc (n3 + n2)) ≡ (suc ((n1 + n3) + n2))
@@ -141,10 +141,10 @@ data Map (G : Set) : ℕ -> Set where
  Type of terms
  ------------------------------------}
 
--- Term n m ∋ term with n free variables and m applications
-data Term : ℕ -> ℕ -> Set where
- head : {n : ℕ} -> Choice n -> Term n zero
- app : {n m1 m2 : ℕ} -> Term n m1 -> Term (suc n) m2 -> Term n (suc (m1 + m2))
+-- Term G m contains terms with free variables of type G and m applications
+data Term : (G : Set) -> ℕ -> Set₁ where
+ head : {G : Set} -> G -> Term G zero
+ app : {G : Set} -> {m1 m2 : ℕ} -> Term G m1 -> Term (Opt G) m2 -> Term G (suc (m2 + m1))
 
 {------------------------------------
  Auxiliary datastructures and defns for converting terms to maps
@@ -177,7 +177,7 @@ zhconcat .(suc (n1 + n3)) n2 (zhcons n1 n3 x zh1) zh2 =
  subst (Zhlist _) (zhcons _ _ x (zhconcat _ _ zh1 zh2)) (cong suc (assoc n1 n2 n3))
 
 {------------------------------------
- Converting terms to maps
+ Converting a single layer of term stuff to map stuff
  ------------------------------------}
 
 -- The output of the φ function
@@ -255,8 +255,28 @@ make-map G Q f n q = match n (gen-acc n) (f q) where
 use-τ : (G : Set) (n : ℕ) -> Gzh G n -> Map G n
 use-τ G n term = make-map G (Gzh G) τ n term
 
-----------------------------------
+{------------------------------------
+ Converting terms to maps
+ ------------------------------------}
 
+head_of_term : {G : Set} {n : ℕ} -> Term G n -> G
+head_of_term (head x) = x
+head_of_term (app t1 t2) = head_of_term t1
+
+map_of_term : (G : Set) (n : ℕ) -> Term G n -> Map G n
+map_of_term G n t = use-τ G n (! (head_of_term t) (spine_of_term t))
+ where
+ spine_of_term : {G : Set} {n : ℕ} -> Term G n -> Zhlist G n
+ spine_of_term (head x) = zhnil
+ spine_of_term (app {G} {m1} {m2} t1 t2) =
+  zhcons m2 m1 (map_of_term (Opt G) m2 t2) (spine_of_term t1)
+
+map_of_unit_term : (n : ℕ) -> Term Unit n -> Map Unit n
+map_of_unit_term = map_of_term Unit
+
+{------------------------------------
+ Impedance matching to javascript
+ ------------------------------------}
 
 {- don't need this yet -}
 -- data Kv (A B : Set) : Set where
@@ -298,6 +318,35 @@ json_of_unit_map (isth h₁ h₂) =
 json_of_unit_map (nonisth h ν) =
   jarr (jstr "nonisth" , json_of_unit_map h ,
                          json_of_nichoice ν , [])
+
+-- RawTerm m contains terms with m free variables
+data RawTerm : ℕ → Set where
+ rhead : {n : ℕ} → Choice n → RawTerm n
+ rapp : {n : ℕ} → RawTerm n → RawTerm (suc n) → RawTerm n
+
+apps_of_raw : {n : ℕ} -> RawTerm n -> ℕ
+apps_of_raw (rhead x) = zero
+apps_of_raw (rapp t1 t2) = suc(apps_of_raw t2 + apps_of_raw t1)
+
+opt_map : {A B : Set} (f : A → B) -> Opt A -> Opt B
+opt_map f (some x) = some (f x)
+opt_map f none = none
+
+term_map : {A B : Set} {n : ℕ} (f : A → B) -> Term A n -> Term B n
+term_map f (head x) = head (f x)
+term_map f (app t1 t2) = app (term_map f t1) (term_map (opt_map f) t2)
+
+choiceopt : (n : ℕ) -> Choice (suc n) -> Opt (Choice n)
+choiceopt n here = none
+choiceopt n (wait χ) = some χ
+
+term_of_raw : {n : ℕ} (t : RawTerm n) -> Term (Choice n) (apps_of_raw t)
+term_of_raw (rhead x) = head x
+term_of_raw (rapp t1 t2) = app (term_of_raw t1) (term_map (choiceopt _) (term_of_raw t2))
+
+{------------------------------------
+ Examples
+ ------------------------------------}
 
 module Foo where
  example1 : Json
