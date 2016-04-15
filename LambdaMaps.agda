@@ -21,12 +21,12 @@ data _≤_ (m : ℕ) : ℕ → Set where
 _<_ : ℕ → ℕ → Set
 m < n = suc m ≤ n
 
+data Σ {ℓ1 ℓ2 : Level} (A : Set ℓ1) (B : A → Set ℓ2) : Set (ℓ1 ⊔ ℓ2) where
+ σ : (a : A) (b : B a) -> Σ A B
+
 data Opt {ℓ : Level} (A : Set ℓ) : Set ℓ where
   some : A -> Opt A
   none : Opt A
-
-data Σ {ℓ1 ℓ2 : Level} (A : Set ℓ1) (B : A → Set ℓ2) : Set (ℓ1 ⊔ ℓ2) where
- σ : (a : A) (b : B a) -> Σ A B
 
 data Bool : Set where
  true : Bool
@@ -46,6 +46,55 @@ data List (A : Set) : Set where
   []   : List A
   _,_ : A → List A → List A
 infixr 5 _,_
+
+{------------------------------------
+ Utility functions
+ ------------------------------------}
+
+map_π₁ : {ℓ1 ℓ2 ℓ3 : Level} {A : Set ℓ1} {C : Set ℓ2} {B : C → Set ℓ3} ->
+         (f : A → C) ->  Σ A (\ x -> B (f x)) -> Σ C B
+map_π₁ f (σ a b) = σ (f a) b
+
+map_πs : {ℓ1 ℓ2 ℓ3 ℓ4 : Level} {A1 : Set ℓ1} {A2 : Set ℓ2} {B1 : A1 → Set ℓ3} {B2 : A2 → Set ℓ4} ->
+ (f : A1 → A2) ->
+ ({x : A1} -> B1 x -> B2 (f x)) -> Σ A1 B1 -> Σ A2 B2
+map_πs f g (σ x y) = σ (f x) (g y)
+
+map_π₂ : {ℓ1 ℓ2 ℓ3 : Level} {A : Set ℓ1} {B : A → Set ℓ2} {C : A → Set ℓ3} -> ({x : A} -> B x -> C x) -> Σ A B -> Σ A C
+map_π₂ f s = map_πs (\ x -> x) f s
+
+opt_map : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B : Set ℓ2} (f : A → B) -> Opt A -> Opt B
+opt_map f (some x) = some (f x)
+opt_map f none = none
+
+_>>_ : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B : Set ℓ2} -> Opt A -> (A -> B) -> Opt B
+o >> f = opt_map f o
+infixl 5 _>>_
+
+_>>>_ : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B : Set ℓ2} -> Opt A -> (A -> Opt B) -> Opt B
+none >>> f = none
+some x >>> f with f x
+... | some y = some y
+... | none = none
+infixl 5 _>>>_
+
+_!>_ : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B : A → Set ℓ2} -> Opt A -> ((x : A) -> B x) -> Opt (Σ A B)
+none !> f = none
+(some x) !> f = some (σ x (f x))
+infixl 5 _!>_
+
+choiceopt : (n : ℕ) -> Choice (suc n) -> Opt (Choice n)
+choiceopt n here = none
+choiceopt n (wait χ) = some χ
+
+mk_choice : (n : ℕ) -> ℕ -> Opt(Choice n)
+mk_choice (suc n) (suc m) = opt_map wait (mk_choice n m)
+mk_choice (suc zero) zero = some here
+mk_choice z m = none
+
+unitchoice : Choice (suc zero) -> Unit
+unitchoice here = •
+unitchoice (wait ())
 
 {------------------------------------
  Equality: defn and lemmas
@@ -150,6 +199,10 @@ data Map (G : Set) : ℕ -> Set where
 data Term {ℓ : Level} : (G : Set ℓ) -> ℕ -> Set (lsuc ℓ) where
  head : {G : Set ℓ} -> G -> Term G zero
  app : {G : Set ℓ} -> {m1 m2 : ℕ} -> Term G m1 -> Term (Opt G) m2 -> Term G (suc (m2 + m1))
+
+term_map : {A B : Set} {n : ℕ} (f : A → B) -> Term A n -> Term B n
+term_map f (head x) = head (f x)
+term_map f (app t1 t2) = app (term_map f t1) (term_map (opt_map f) t2)
 
 {------------------------------------
  Auxiliary datastructures and defns for converting terms to maps
@@ -280,6 +333,42 @@ map_of_unit_term : {n : ℕ} -> Term Unit n -> Map Unit n
 map_of_unit_term {n} = map_of_term Unit n
 
 {------------------------------------
+ Raw-er term formats
+ ------------------------------------}
+
+-- RawTerm m contains terms with m free variables
+data RawTerm : ℕ → Set where
+ rhead : {n : ℕ} → Choice n → RawTerm n
+ rapp : {n : ℕ} → RawTerm n → RawTerm (suc n) → RawTerm n
+
+apps_of_raw : {n : ℕ} -> RawTerm n -> ℕ
+apps_of_raw (rhead x) = zero
+apps_of_raw (rapp t1 t2) = suc(apps_of_raw t2 + apps_of_raw t1)
+
+term_of_raw : {n : ℕ} (t : RawTerm n) -> Term (Choice n) (apps_of_raw t)
+term_of_raw (rhead x) = head x
+term_of_raw (rapp t1 t2) = app (term_of_raw t1) (term_map (choiceopt _) (term_of_raw t2))
+
+data BareTerm : Set where
+ bhead : ℕ → BareTerm
+ bapp : BareTerm → BareTerm → BareTerm
+
+raw_of_bare : (n : ℕ) -> BareTerm -> Opt (RawTerm n)
+raw_of_bare n (bhead db) = mk_choice n db >> rhead
+raw_of_bare n (bapp hd tl) =
+ raw_of_bare n hd >>> \ hh ->
+ raw_of_bare (suc n) tl >> \ tt ->
+ rapp hh tt
+
+map_of_bare : BareTerm -> Opt (Σ ℕ (Map Unit))
+map_of_bare b =
+  raw_of_bare (suc zero) b
+          !> term_of_raw
+          >> map_π₂ (term_map unitchoice)
+          >> map_π₁ apps_of_raw
+          >> map_π₂ map_of_unit_term
+
+{------------------------------------
  Impedance matching to javascript
  ------------------------------------}
 
@@ -305,16 +394,6 @@ json_of_nichoice (nonloop χ β) = jarr (jnat (nat_of_choice χ) , jstr (nameboo
  namebool true = "cw"
  namebool false = "ccw"
 
-{- don't seem to need this generality -}
--- json_of_Map : {G : Set} {n : ℕ} -> (G -> Json) ->  Map G n -> Json
--- json_of_Map json_of_g (vert x) = jarr (jstr "vert" , json_of_g x , [])
--- json_of_Map json_of_g (isth h₁ h₂) =
---   jarr (jstr "isth" , json_of_Map json_of_g h₁ ,
---                       json_of_Map json_of_g h₂ , [])
--- json_of_Map json_of_g (nonisth h ν) =
---   jarr (jstr "nonisth" , json_of_Map json_of_g h ,
---                          json_of_Nichoice ν , [])
-
 json_of_unit_map : {n : ℕ} -> Map Unit n -> Json
 json_of_unit_map (vert _) = jstr "vert"
 json_of_unit_map (isth h₁ h₂) =
@@ -324,86 +403,10 @@ json_of_unit_map (nonisth h ν) =
   jarr (jstr "nonisth" , json_of_unit_map h ,
                          json_of_nichoice ν , [])
 
--- RawTerm m contains terms with m free variables
-data RawTerm : ℕ → Set where
- rhead : {n : ℕ} → Choice n → RawTerm n
- rapp : {n : ℕ} → RawTerm n → RawTerm (suc n) → RawTerm n
-
-apps_of_raw : {n : ℕ} -> RawTerm n -> ℕ
-apps_of_raw (rhead x) = zero
-apps_of_raw (rapp t1 t2) = suc(apps_of_raw t2 + apps_of_raw t1)
-
-opt_map : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B : Set ℓ2} (f : A → B) -> Opt A -> Opt B
-opt_map f (some x) = some (f x)
-opt_map f none = none
-
-term_map : {A B : Set} {n : ℕ} (f : A → B) -> Term A n -> Term B n
-term_map f (head x) = head (f x)
-term_map f (app t1 t2) = app (term_map f t1) (term_map (opt_map f) t2)
-
-choiceopt : (n : ℕ) -> Choice (suc n) -> Opt (Choice n)
-choiceopt n here = none
-choiceopt n (wait χ) = some χ
-
-term_of_raw : {n : ℕ} (t : RawTerm n) -> Term (Choice n) (apps_of_raw t)
-term_of_raw (rhead x) = head x
-term_of_raw (rapp t1 t2) = app (term_of_raw t1) (term_map (choiceopt _) (term_of_raw t2))
-
-data BareTerm : Set where
- bhead : ℕ → BareTerm
- bapp : BareTerm → BareTerm → BareTerm
-
-mk_choice : (n : ℕ) -> ℕ -> Opt(Choice n)
-mk_choice (suc n) (suc m) = opt_map wait (mk_choice n m)
-mk_choice (suc zero) zero = some here
-mk_choice z m = none
-
-_>>_ : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B : Set ℓ2} -> Opt A -> (A -> B) -> Opt B
-o >> f = opt_map f o
-infixl 5 _>>_
-
-_>>>_ : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B : Set ℓ2} -> Opt A -> (A -> Opt B) -> Opt B
-none >>> f = none
-some x >>> f with f x
-... | some y = some y
-... | none = none
-infixl 5 _>>>_
-
-_!>_ : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B : A → Set ℓ2} -> Opt A -> ((x : A) -> B x) -> Opt (Σ A B)
-none !> f = none
-(some x) !> f = some (σ x (f x))
-infixl 5 _!>_
-
-raw_of_bare : (n : ℕ) -> BareTerm -> Opt (RawTerm n)
-raw_of_bare n (bhead db) = mk_choice n db >> rhead
-raw_of_bare n (bapp hd tl) =
- raw_of_bare n hd >>> \ hh ->
- raw_of_bare (suc n) tl >> \ tt ->
- rapp hh tt
-
-map_π₁ : {ℓ1 ℓ2 ℓ3 : Level} {A : Set ℓ1} {C : Set ℓ2} {B : C → Set ℓ3} ->
-         (f : A → C) ->  Σ A (\ x -> B (f x)) -> Σ C B
-map_π₁ f (σ a b) = σ (f a) b
-
-map_πs : {ℓ1 ℓ2 ℓ3 ℓ4 : Level} {A1 : Set ℓ1} {A2 : Set ℓ2} {B1 : A1 → Set ℓ3} {B2 : A2 → Set ℓ4} ->
- (f : A1 → A2) ->
- ({x : A1} -> B1 x -> B2 (f x)) -> Σ A1 B1 -> Σ A2 B2
-map_πs f g (σ x y) = σ (f x) (g y)
-
-map_π₂ : {ℓ1 ℓ2 ℓ3 : Level} {A : Set ℓ1} {B : A → Set ℓ2} {C : A → Set ℓ3} -> ({x : A} -> B x -> C x) -> Σ A B -> Σ A C
-map_π₂ f s = map_πs (\ x -> x) f s
-
-unitchoice : Choice (suc zero) -> Unit
-unitchoice here = •
-unitchoice (wait ())
-
-map_of_bare : BareTerm -> Opt (Σ ℕ (Map Unit))
-map_of_bare b =
-  raw_of_bare (suc zero) b
-          !> term_of_raw
-          >> map_π₂ (term_map unitchoice)
-          >> map_π₁ apps_of_raw
-          >> map_π₂ map_of_unit_term
+json_of_bare : BareTerm -> Json
+json_of_bare b with map_of_bare b
+... | none = jstr "none"
+... | some (σ n h) = json_of_unit_map {n} h
 
 {------------------------------------
  Examples
