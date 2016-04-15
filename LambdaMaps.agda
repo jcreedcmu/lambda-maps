@@ -276,8 +276,8 @@ map_of_term G n t = use-τ G n (! (head_of_term t) (spine_of_term t))
  spine_of_term (app {G} {m1} {m2} t1 t2) =
   zhcons m2 m1 (map_of_term (Opt G) m2 t2) (spine_of_term t1)
 
-map_of_unit_term : (n : ℕ) -> Term Unit n -> Map Unit n
-map_of_unit_term = map_of_term Unit
+map_of_unit_term : {n : ℕ} -> Term Unit n -> Map Unit n
+map_of_unit_term {n} = map_of_term Unit n
 
 {------------------------------------
  Impedance matching to javascript
@@ -333,7 +333,7 @@ apps_of_raw : {n : ℕ} -> RawTerm n -> ℕ
 apps_of_raw (rhead x) = zero
 apps_of_raw (rapp t1 t2) = suc(apps_of_raw t2 + apps_of_raw t1)
 
-opt_map : {A B : Set} (f : A → B) -> Opt A -> Opt B
+opt_map : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B : Set ℓ2} (f : A → B) -> Opt A -> Opt B
 opt_map f (some x) = some (f x)
 opt_map f none = none
 
@@ -358,22 +358,8 @@ mk_choice (suc n) (suc m) = opt_map wait (mk_choice n m)
 mk_choice (suc zero) zero = some here
 mk_choice z m = none
 
-raw_of_bare : (n : ℕ) -> BareTerm -> Opt (RawTerm n)
-raw_of_bare n (bhead db) with mk_choice n db
-... | none = none
-... | some x = some (rhead x)
-raw_of_bare n (bapp hd tl) with raw_of_bare n hd | raw_of_bare (suc n) tl
-... | none | _ = none
-... | some _ | none = none
-... | some hh | some tt = some (rapp hh tt)
-
--- _>>_ : {A : Set} {B C : A → Set} {y : A} -> Opt (B y) -> ({x : A} -> B x -> C x) -> Opt (C y)
--- none >> f = none
--- (some x) >> f = some (f x)
-
 _>>_ : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B : Set ℓ2} -> Opt A -> (A -> B) -> Opt B
-none >> f = none
-(some x) >> f = some (f x)
+o >> f = opt_map f o
 infixl 5 _>>_
 
 _!>_ : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B : A → Set ℓ2} -> Opt A -> ((x : A) -> B x) -> Opt (Σ A B)
@@ -381,24 +367,43 @@ none !> f = none
 (some x) !> f = some (σ x (f x))
 infixl 5 _!>_
 
-map_π₂ : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B C : A → Set ℓ2} -> ({x : A} -> B x -> C x) -> Σ A B -> Σ A C
-map_π₂ f (σ x y) = σ x (f y)
+
+raw_of_bare : (n : ℕ) -> BareTerm -> Opt (RawTerm n)
+raw_of_bare n (bhead db) = mk_choice n db >> rhead
+raw_of_bare n (bapp hd tl) with raw_of_bare n hd | raw_of_bare (suc n) tl
+... | none | _ = none
+... | some _ | none = none
+... | some hh | some tt = some (rapp hh tt)
+
+
+
+map_π₁ : {ℓ1 ℓ2 ℓ3 : Level} {A : Set ℓ1} {C : Set ℓ2} {B : C → Set ℓ3} ->
+         (f : A → C) ->  Σ A (\ x -> B (f x)) -> Σ C B
+map_π₁ f (σ a b) = σ (f a) b
+
+map_πs : {ℓ1 ℓ2 ℓ3 ℓ4 : Level} {A1 : Set ℓ1} {A2 : Set ℓ2} {B1 : A1 → Set ℓ3} {B2 : A2 → Set ℓ4} ->
+ (f : A1 → A2) ->
+ ({x : A1} -> B1 x -> B2 (f x)) -> Σ A1 B1 -> Σ A2 B2
+map_πs f g (σ x y) = σ (f x) (g y)
+
+map_π₂ : {ℓ1 ℓ2 ℓ3 : Level} {A : Set ℓ1} {B : A → Set ℓ2} {C : A → Set ℓ3} -> ({x : A} -> B x -> C x) -> Σ A B -> Σ A C
+map_π₂ f s = map_πs (\ x -> x) f s
 
 unitchoice : Choice (suc zero) -> Unit
 unitchoice here = •
 unitchoice (wait ())
 
-
-term_of_bare : BareTerm -> Opt (Σ (RawTerm (suc zero)) (λ z → Term Unit (apps_of_raw z)))
-term_of_bare b = term_pkg
-  where
-  term_pkg = raw_of_bare (suc zero) b
+map_of_bare : BareTerm -> Opt (Σ ℕ (Map Unit))
+map_of_bare b =
+  raw_of_bare (suc zero) b
                    !> term_of_raw
                    >> map_π₂ (term_map unitchoice)
+                   >> map_π₁ apps_of_raw
+                   >> map_π₂ map_of_unit_term
 
-foo : Σ (RawTerm (suc zero)) (λ z → Term Unit (apps_of_raw z))
- -> Σ ℕ (λ z → Term Unit z)
-foo (σ rt t) = σ (apps_of_raw rt) t
+
+
+
 
 {------------------------------------
  Examples
