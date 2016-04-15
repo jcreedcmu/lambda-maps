@@ -1,5 +1,9 @@
 module LambdaMaps where
 
+{------------------------------------
+ Basic standard library stuff I'm
+ copy-pasting here for simpler js output
+ ------------------------------------}
 data ℕ : Set where
  zero : ℕ
  suc : ℕ -> ℕ
@@ -8,12 +12,12 @@ _+_ : ℕ -> ℕ -> ℕ
 zero + N = N
 (suc N) + M = suc (N + M)
 
-data _≤′_ (m : ℕ) : ℕ → Set where
-  ≤′-refl :                         m ≤′ m
-  ≤′-step : ∀ {n} (m≤′n : m ≤′ n) → m ≤′ suc n
+data _≤_ (m : ℕ) : ℕ → Set where
+  ≤-refl :                         m ≤ m
+  ≤-step : ∀ {n} (m≤n : m ≤ n) → m ≤ suc n
 
-_<′_ : ℕ → ℕ → Set
-m <′ n = suc m ≤′ n
+_<_ : ℕ → ℕ → Set
+m < n = suc m ≤ n
 
 data opt (A : Set) : Set where
   some : A -> opt A
@@ -23,9 +27,6 @@ data list (A : Set) : Set where
   cons : A -> list A -> list A
   nil : list A
 
--- data Kv (A B : Set) : Set where
---   _⇒_ : A -> B -> Kv A B
-
 data bool : Set where
  true : bool
  false : bool
@@ -34,27 +35,12 @@ data choice : ℕ -> Set where
  here : {n : ℕ} -> choice (suc n)
  wait : {n : ℕ} -> choice n -> choice (suc n)
 
-data nichoice : ℕ -> Set where
- loop : {n : ℕ} -> nichoice n
- nonloop : {n : ℕ} -> choice n -> bool -> nichoice n
+data unit : Set where
+ • : unit
 
-data map (G : Set) : ℕ -> Set where
- vert : G -> map G zero
- isth : {n1 n2 : ℕ} -> map G n1 -> map G n2 -> map G (suc (n1 + n2))
- nonisth : {n : ℕ} -> map G n -> nichoice n -> map G (suc n)
-
--- data term (G : Set) : ℕ -> Set where
---  head : G -> term G zero
---  app : {n1 n2 : ℕ} -> term G n1 -> term (opt G) n2 -> term G (suc (n1 + n2))
-
-data zhlist (G : Set) : ℕ -> Set where
- zhnil : zhlist G zero
- zhcons : (n1 n2 : ℕ) -> map (opt G) n1 -> zhlist G n2 -> zhlist G (suc (n1 + n2))
-
-data φres (G : Set) : ℕ -> Set where
- φr-vert : {n : ℕ} -> zhlist G n -> G -> φres G n
- φr-nonisth : {n1 n2 : ℕ} -> zhlist G n1 -> map (opt G) n2 -> opt (nichoice n2) -> φres G (suc (n2 + n1))
- φr-underflow : φres G zero
+{------------------------------------
+ Equality and lemmas
+ ------------------------------------}
 
 data _≡_ : {A : Set} -> A -> A -> Set1 where
  refl : {A : Set} {a : A} -> a ≡ a
@@ -67,6 +53,10 @@ cong f refl = refl
 
 sym : {A : Set} {a b : A} -> a ≡ b -> b ≡ a
 sym refl = refl
+
+{------------------------------------
+ Some ℕ lemmas
+ ------------------------------------}
 
 +lemma : (n1 n2 n3 : ℕ) -> (n1 + suc (n3 + n2)) ≡ (suc ((n1 + n3) + n2))
 +lemma zero n2 n3 = refl
@@ -84,14 +74,61 @@ sym refl = refl
 +comm zero n1 = +comm/2 n1
 +comm (suc n1) n2 = cong suc (+comm n1 n2) ∘ +comm/1 n2 n1
 
-φres-cong : {G : Set} {n1 n2 : ℕ} -> φres G n1 -> n1 ≡ n2 -> φres G n2
-φres-cong pf refl = pf
+{------------------------------------
+ Type of maps
+ ------------------------------------}
+
+-- Choice of where to attach a nonisthmic edge.
+-- There are 2n+1 such places in a map with n edges.
+data nichoice : ℕ -> Set where
+ loop : {n : ℕ} -> nichoice n
+ nonloop : {n : ℕ} -> choice n -> bool -> nichoice n
+
+-- A map with G-data at vertices and with n edges can be a single
+-- vertex, the isthmic attachment of two maps, or a map with a
+-- nonisthmically attached edge.
+data map (G : Set) : ℕ -> Set where
+ vert : G -> map G zero
+ isth : {n1 n2 : ℕ} -> map G n1 -> map G n2 -> map G (suc (n1 + n2))
+ nonisth : {n : ℕ} -> map G n -> nichoice n -> map G (suc n)
+
+{------------------------------------
+ Type of terms
+ ------------------------------------}
+
+-- data term (G : Set) : ℕ -> Set where
+--  head : G -> term G zero
+--  app : {n1 n2 : ℕ} -> term G n1 -> term (opt G) n2 -> term G (suc (n1 + n2))
+
+{------------------------------------
+ Converting terms to maps
+ ------------------------------------}
+
+-- A useful intermediate data structure whose elements are each a
+-- detached edge plus a map with G+1 vertex data
+data zhlist (G : Set) : ℕ -> Set where
+ zhnil : zhlist G zero
+ zhcons : (n1 n2 : ℕ) -> map (opt G) n1 -> zhlist G n2 -> zhlist G (suc (n1 + n2))
+
+-- One of those such lists plus a G at the head
+data gzh (G : Set) : ℕ -> Set where
+ ! : {n : ℕ} -> G -> zhlist G n -> gzh G n
+
+-- The output of the φ function
+data φres (G : Set) : ℕ -> Set where
+ φr-vert : {n : ℕ} -> zhlist G n -> G -> φres G n
+ φr-nonisth : {n1 n2 : ℕ} -> zhlist G n1 -> map (opt G) n2 -> opt (nichoice n2) -> φres G (suc (n2 + n1))
+ φr-underflow : φres G zero
+
+subst : {A : Set} (B : A → Set) {a1 a2 : A} -> B a1 -> a1 ≡ a2 -> B a2
+subst _ x refl = x
 
 φ : {G : Set} -> {n1 n2 : ℕ} -> map (opt G) n1 -> zhlist G n2 -> φres G (n1 + n2)
 φ (vert (some g)) s = φr-vert s g
 φ (vert none) zhnil = φr-underflow
 φ (vert none) (zhcons _ _ h s) = φr-nonisth s h none
-φ {_} {_} {n2} (isth {n3} {n4} h1 h2) s = φres-cong (φ h1 (zhcons _ _ h2 s)) (+lemma n3 n2 n4)
+φ {_} {_} {n2} (isth {n3} {n4} h1 h2) s = subst (φres _)
+                        (φ h1 (zhcons _ _ h2 s)) (+lemma n3 n2 n4)
 φ (nonisth h ν) s = φr-nonisth s h (some ν)
 
 data τres (G : Set) (Q : ℕ -> Set) : ℕ -> Set where
@@ -99,11 +136,7 @@ data τres (G : Set) (Q : ℕ -> Set) : ℕ -> Set where
  τr-isth : {n n1 n2 : ℕ} -> Q n1 -> Q n2 -> τres G Q (suc (n1 + n2))
  τr-nonisth : {n : ℕ} -> Q n -> nichoice n -> τres G Q (suc n)
 
-data unit : Set where
- • : unit
 
-data gzh (G : Set) : ℕ -> Set where
- ! : {n : ℕ} -> G -> zhlist G n -> gzh G n
 
 predelay' : {n : ℕ} -> (m : ℕ) -> choice n -> choice (m + n)
 predelay' zero c = c
@@ -170,37 +203,37 @@ aux g φr-underflow s = τr-nonisth (! g s) loop
 τ (! g zhnil) = τr-vert g
 τ {G} (! g (zhcons n1 n2 h s)) = aux g h' s where
  h' : φres G n1
- h' = φres-cong (φ h zhnil) (+comm n1 zero)
+ h' = subst (φres _) (φ h zhnil) (+comm n1 zero)
 
 data Acc (x : ℕ) : Set where
-  acc : (∀ y → (y <′ x) → Acc y) → Acc x
+  acc : (∀ y → (y < x) → Acc y) → Acc x
 
-base : ∀ y -> (y <′ zero) -> Acc y
+base : ∀ y -> (y < zero) -> Acc y
 base _ ()
 
 gen-acc : (n : ℕ) -> Acc n
 gen-acc n = acc (gen-acc-aux n)
   where
-  gen-acc-aux : (n : ℕ) (y : ℕ) → y <′ n → Acc y
+  gen-acc-aux : (n : ℕ) (y : ℕ) → y < n → Acc y
   gen-acc-aux n zero le = acc base
-  gen-acc-aux .(suc (suc y)) (suc y) ≤′-refl = gen-acc (suc y)
-  gen-acc-aux ._ (suc y) (≤′-step le) = gen-acc-aux _ (suc y) le
+  gen-acc-aux .(suc (suc y)) (suc y) ≤-refl = gen-acc (suc y)
+  gen-acc-aux ._ (suc y) (≤-step le) = gen-acc-aux _ (suc y) le
 
-≤-0 : (n : ℕ) -> zero ≤′ n
-≤-0 zero = ≤′-refl
-≤-0 (suc n) = ≤′-step (≤-0 n)
+≤-0 : (n : ℕ) -> zero ≤ n
+≤-0 zero = ≤-refl
+≤-0 (suc n) = ≤-step (≤-0 n)
 
-≤-suc : {n1 n2 : ℕ} -> n1 ≤′ n2 -> suc n1 ≤′ suc n2
-≤-suc ≤′-refl = ≤′-refl
-≤-suc(≤′-step x) = ≤′-step (≤-suc x)
+≤-suc : {n1 n2 : ℕ} -> n1 ≤ n2 -> suc n1 ≤ suc n2
+≤-suc ≤-refl = ≤-refl
+≤-suc(≤-step x) = ≤-step (≤-suc x)
 
-≤-lemma-1 : (n1 n2 : ℕ) -> n1 ≤′ (n1 + n2)
+≤-lemma-1 : (n1 n2 : ℕ) -> n1 ≤ (n1 + n2)
 ≤-lemma-1 zero n2 = ≤-0 n2
 ≤-lemma-1 (suc n1) n2 = ≤-suc (≤-lemma-1 n1 n2)
 
-≤-lemma-2 : (n1 n2 : ℕ) -> n2 ≤′ (n1 + n2)
-≤-lemma-2 zero n2 = ≤′-refl
-≤-lemma-2 (suc n1) n2 = ≤′-step (≤-lemma-2 n1 n2)
+≤-lemma-2 : (n1 n2 : ℕ) -> n2 ≤ (n1 + n2)
+≤-lemma-2 zero n2 = ≤-refl
+≤-lemma-2 (suc n1) n2 = ≤-step (≤-lemma-2 n1 n2)
 
 make-map : (G : Set) (Q : ℕ -> Set) -> ({n : ℕ} -> Q n -> τres G Q n) -> (n : ℕ) -> Q n -> map G n
 make-map G Q f n q = match n (gen-acc n) (f q) where
@@ -210,7 +243,7 @@ make-map G Q f n q = match n (gen-acc n) (f q) where
        isth {G} {n1} {n2}
             (match n1 (ψ n1 (≤-suc (≤-lemma-1 n1 n2))) (f q1))
             (match n2 (ψ n2 (≤-suc (≤-lemma-2 n1 n2))) (f q2))
- match _ (acc ψ) (τr-nonisth {n} q ν) = nonisth (match n (ψ n ≤′-refl) (f q)) ν
+ match _ (acc ψ) (τr-nonisth {n} q ν) = nonisth (match n (ψ n ≤-refl) (f q)) ν
 
 use-τ : (G : Set) (n : ℕ) -> gzh G n -> map G n
 use-τ G n term = make-map G (gzh G) τ n term
@@ -224,6 +257,10 @@ data List (A : Set) : Set where
   []   : List A
   _,_ : A → List A → List A
 infixr 5 _,_
+
+{- don't need this yet -}
+-- data Kv (A B : Set) : Set where
+--   _⇒_ : A -> B -> Kv A B
 
 data Json : Set where
  jnat : ℕ -> Json
