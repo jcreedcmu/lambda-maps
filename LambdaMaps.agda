@@ -54,6 +54,9 @@ cong f refl = refl
 sym : {A : Set} {a b : A} -> a ≡ b -> b ≡ a
 sym refl = refl
 
+subst : {A : Set} (B : A → Set) {a1 a2 : A} -> B a1 -> a1 ≡ a2 -> B a2
+subst _ x refl = x
+
 {------------------------------------
  Some ℕ lemmas
  ------------------------------------}
@@ -73,6 +76,44 @@ sym refl = refl
 +comm : (n1 n2 : ℕ) -> (n1 + n2) ≡ (n2 + n1)
 +comm zero n1 = +comm/2 n1
 +comm (suc n1) n2 = cong suc (+comm n1 n2) ∘ +comm/1 n2 n1
+
+assoc : (n1 n2 n3 : ℕ) -> (n1 + (n3 + n2)) ≡ ((n1 + n3) + n2)
+assoc zero n2 n3 = refl
+assoc (suc n1) n2 n3 = cong suc (assoc n1 n2 n3)
+
+≤-0 : (n : ℕ) -> zero ≤ n
+≤-0 zero = ≤-refl
+≤-0 (suc n) = ≤-step (≤-0 n)
+
+≤-suc : {n1 n2 : ℕ} -> n1 ≤ n2 -> suc n1 ≤ suc n2
+≤-suc ≤-refl = ≤-refl
+≤-suc(≤-step x) = ≤-step (≤-suc x)
+
+≤-lemma-1 : (n1 n2 : ℕ) -> n1 ≤ (n1 + n2)
+≤-lemma-1 zero n2 = ≤-0 n2
+≤-lemma-1 (suc n1) n2 = ≤-suc (≤-lemma-1 n1 n2)
+
+≤-lemma-2 : (n1 n2 : ℕ) -> n2 ≤ (n1 + n2)
+≤-lemma-2 zero n2 = ≤-refl
+≤-lemma-2 (suc n1) n2 = ≤-step (≤-lemma-2 n1 n2)
+
+{------------------------------------
+ Well-founded induction
+ ------------------------------------}
+
+data Acc (x : ℕ) : Set where
+  acc : (∀ y → (y < x) → Acc y) → Acc x
+
+base : ∀ y -> (y < zero) -> Acc y
+base _ ()
+
+gen-acc : (n : ℕ) -> Acc n
+gen-acc n = acc (gen-acc-aux n)
+  where
+  gen-acc-aux : (n : ℕ) (y : ℕ) → y < n → Acc y
+  gen-acc-aux n zero le = acc base
+  gen-acc-aux .(suc (suc y)) (suc y) ≤-refl = gen-acc (suc y)
+  gen-acc-aux ._ (suc y) (≤-step le) = gen-acc-aux _ (suc y) le
 
 {------------------------------------
  Type of maps
@@ -101,7 +142,7 @@ data map (G : Set) : ℕ -> Set where
 --  app : {n1 n2 : ℕ} -> term G n1 -> term (opt G) n2 -> term G (suc (n1 + n2))
 
 {------------------------------------
- Converting terms to maps
+ Auxiliary datastructures and defns for converting terms to maps
  ------------------------------------}
 
 -- A useful intermediate data structure whose elements are each a
@@ -114,14 +155,31 @@ data zhlist (G : Set) : ℕ -> Set where
 data gzh (G : Set) : ℕ -> Set where
  ! : {n : ℕ} -> G -> zhlist G n -> gzh G n
 
+predelay' : {n : ℕ} -> (m : ℕ) -> choice n -> choice (m + n)
+predelay' zero c = c
+predelay' (suc m) c = wait (predelay' m c)
+
+predelay : {n : ℕ} -> (m : ℕ) -> choice n -> choice (n + m)
+predelay {n} m χ = subst choice (predelay' m χ) (+comm m n)
+
+postdelay : {n : ℕ} -> (m : ℕ) -> choice n -> choice (n + m)
+postdelay m here = here
+postdelay m (wait c) = (wait (postdelay m c))
+
+zhconcat : {G : Set} (n1 n2 : ℕ) -> zhlist G n1 -> zhlist G n2 -> zhlist G (n1 + n2)
+zhconcat .zero n2 zhnil w = w
+zhconcat .(suc (n1 + n3)) n2 (zhcons n1 n3 x zh1) zh2 =
+ subst (zhlist _) (zhcons _ _ x (zhconcat _ _ zh1 zh2)) (cong suc (assoc n1 n2 n3))
+
+{------------------------------------
+ Converting terms to maps
+ ------------------------------------}
+
 -- The output of the φ function
 data φres (G : Set) : ℕ -> Set where
  φr-vert : {n : ℕ} -> zhlist G n -> G -> φres G n
  φr-nonisth : {n1 n2 : ℕ} -> zhlist G n1 -> map (opt G) n2 -> opt (nichoice n2) -> φres G (suc (n2 + n1))
  φr-underflow : φres G zero
-
-subst : {A : Set} (B : A → Set) {a1 a2 : A} -> B a1 -> a1 ≡ a2 -> B a2
-subst _ x refl = x
 
 φ : {G : Set} -> {n1 n2 : ℕ} -> map (opt G) n1 -> zhlist G n2 -> φres G (n1 + n2)
 φ (vert (some g)) s = φr-vert s g
@@ -131,41 +189,14 @@ subst _ x refl = x
                         (φ h1 (zhcons _ _ h2 s)) (+lemma n3 n2 n4)
 φ (nonisth h ν) s = φr-nonisth s h (some ν)
 
+-- The output of the τ function
 data τres (G : Set) (Q : ℕ -> Set) : ℕ -> Set where
  τr-vert : G -> τres G Q zero
  τr-isth : {n n1 n2 : ℕ} -> Q n1 -> Q n2 -> τres G Q (suc (n1 + n2))
  τr-nonisth : {n : ℕ} -> Q n -> nichoice n -> τres G Q (suc n)
 
-
-
-predelay' : {n : ℕ} -> (m : ℕ) -> choice n -> choice (m + n)
-predelay' zero c = c
-predelay' (suc m) c = wait (predelay' m c)
-
-choice-cong : {n1 n2 : ℕ} -> choice n1 -> n1 ≡ n2 -> choice n2
-choice-cong χ refl = χ
-
-predelay : {n : ℕ} -> (m : ℕ) -> choice n -> choice (n + m)
-predelay {n} m χ = choice-cong (predelay' m χ) (+comm m n)
-
-postdelay : {n : ℕ} -> (m : ℕ) -> choice n -> choice (n + m)
-postdelay m here = here
-postdelay m (wait c) = (wait (postdelay m c))
-
-assoc : (n1 n2 n3 : ℕ) -> (n1 + (n3 + n2)) ≡ ((n1 + n3) + n2)
-assoc zero n2 n3 = refl
-assoc (suc n1) n2 n3 = cong suc (assoc n1 n2 n3)
-
-zhlist-cong : {G : Set} (n1 n2 : ℕ) -> zhlist G n1 -> n1 ≡ n2 -> zhlist G n2
-zhlist-cong n1 .n1 zh refl = zh
-
-zhconcat : {G : Set} (n1 n2 : ℕ) -> zhlist G n1 -> zhlist G n2 -> zhlist G (n1 + n2)
-zhconcat .zero n2 zhnil w = w
-zhconcat .(suc (n1 + n3)) n2 (zhcons n1 n3 x zh1) zh2 =
- zhlist-cong _ _ (zhcons _ _ x (zhconcat _ _ zh1 zh2)) (cong suc (assoc n1 n2 n3))
-
-aux : {n1 n2 : ℕ} {G : Set} -> G -> φres G n1 -> zhlist G n2 -> τres G (gzh G) (suc (n1 + n2))
-aux {_} {n2} g1 (φr-vert s1 g2) s2 = τr-isth {_} {_} {n2} (! g1 s1) (! g2 s2)
+τ0 : {n1 n2 : ℕ} {G : Set} -> G -> φres G n1 -> zhlist G n2 -> τres G (gzh G) (suc (n1 + n2))
+τ0 {_} {n2} g1 (φr-vert s1 g2) s2 = τr-isth {_} {_} {n2} (! g1 s1) (! g2 s2)
 {-
 This case is the trickiest of this function. We have
 g   : .G
@@ -188,7 +219,7 @@ The n1 and n2 branches of ?3 correspond to other ways of constructing the
 list
 x @ [y] @ s
 -}
-aux {_} {n2} g (φr-nonisth {n1} {n3} x y z) s =
+τ0 {_} {n2} g (φr-nonisth {n1} {n3} x y z) s =
   τr-nonisth (! g (zhconcat (suc (n3 + n1)) n2 (zhcons n3 n1 y x) s))
              (process-choices n1 n2 n3 z)
   where
@@ -197,43 +228,14 @@ aux {_} {n2} g (φr-nonisth {n1} {n3} x y z) s =
   process-choices n1 n2 n3 (some (nonloop ν β)) = nonloop (wait (predelay n2 (postdelay n1 ν))) β
   process-choices n1 n2 n3 none = nonloop here false
 
-aux g φr-underflow s = τr-nonisth (! g s) loop
+τ0 g φr-underflow s = τr-nonisth (! g s) loop
 
 τ : {G : Set} {n : ℕ} -> gzh G n -> τres G (gzh G) n
 τ (! g zhnil) = τr-vert g
-τ {G} (! g (zhcons n1 n2 h s)) = aux g h' s where
+τ {G} (! g (zhcons n1 n2 h s)) = τ0 g h' s where
  h' : φres G n1
  h' = subst (φres _) (φ h zhnil) (+comm n1 zero)
 
-data Acc (x : ℕ) : Set where
-  acc : (∀ y → (y < x) → Acc y) → Acc x
-
-base : ∀ y -> (y < zero) -> Acc y
-base _ ()
-
-gen-acc : (n : ℕ) -> Acc n
-gen-acc n = acc (gen-acc-aux n)
-  where
-  gen-acc-aux : (n : ℕ) (y : ℕ) → y < n → Acc y
-  gen-acc-aux n zero le = acc base
-  gen-acc-aux .(suc (suc y)) (suc y) ≤-refl = gen-acc (suc y)
-  gen-acc-aux ._ (suc y) (≤-step le) = gen-acc-aux _ (suc y) le
-
-≤-0 : (n : ℕ) -> zero ≤ n
-≤-0 zero = ≤-refl
-≤-0 (suc n) = ≤-step (≤-0 n)
-
-≤-suc : {n1 n2 : ℕ} -> n1 ≤ n2 -> suc n1 ≤ suc n2
-≤-suc ≤-refl = ≤-refl
-≤-suc(≤-step x) = ≤-step (≤-suc x)
-
-≤-lemma-1 : (n1 n2 : ℕ) -> n1 ≤ (n1 + n2)
-≤-lemma-1 zero n2 = ≤-0 n2
-≤-lemma-1 (suc n1) n2 = ≤-suc (≤-lemma-1 n1 n2)
-
-≤-lemma-2 : (n1 n2 : ℕ) -> n2 ≤ (n1 + n2)
-≤-lemma-2 zero n2 = ≤-refl
-≤-lemma-2 (suc n1) n2 = ≤-step (≤-lemma-2 n1 n2)
 
 make-map : (G : Set) (Q : ℕ -> Set) -> ({n : ℕ} -> Q n -> τres G Q n) -> (n : ℕ) -> Q n -> map G n
 make-map G Q f n q = match n (gen-acc n) (f q) where
