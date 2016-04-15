@@ -19,13 +19,9 @@ data _≤_ (m : ℕ) : ℕ → Set where
 _<_ : ℕ → ℕ → Set
 m < n = suc m ≤ n
 
-data opt (A : Set) : Set where
-  some : A -> opt A
-  none : opt A
-
-data list (A : Set) : Set where
-  cons : A -> list A -> list A
-  nil : list A
+data Opt (A : Set) : Set where
+  some : A -> Opt A
+  none : Opt A
 
 data bool : Set where
  true : bool
@@ -37,6 +33,14 @@ data choice : ℕ -> Set where
 
 data unit : Set where
  • : unit
+
+postulate String : Set
+{-# BUILTIN STRING String #-}
+
+data List (A : Set) : Set where
+  []   : List A
+  _,_ : A → List A → List A
+infixr 5 _,_
 
 {------------------------------------
  Equality and lemmas
@@ -137,9 +141,10 @@ data map (G : Set) : ℕ -> Set where
  Type of terms
  ------------------------------------}
 
--- data term (G : Set) : ℕ -> Set where
---  head : G -> term G zero
---  app : {n1 n2 : ℕ} -> term G n1 -> term (opt G) n2 -> term G (suc (n1 + n2))
+-- term n m = term with n free variables and m applications
+data term : ℕ -> ℕ -> Set where
+ head : {n : ℕ} -> choice n -> term n zero
+ app : {n m1 m2 : ℕ} -> term n m1 -> term (suc n) m2 -> term n (suc (m1 + m2))
 
 {------------------------------------
  Auxiliary datastructures and defns for converting terms to maps
@@ -149,7 +154,7 @@ data map (G : Set) : ℕ -> Set where
 -- detached edge plus a map with G+1 vertex data
 data zhlist (G : Set) : ℕ -> Set where
  zhnil : zhlist G zero
- zhcons : (n1 n2 : ℕ) -> map (opt G) n1 -> zhlist G n2 -> zhlist G (suc (n1 + n2))
+ zhcons : (n1 n2 : ℕ) -> map (Opt G) n1 -> zhlist G n2 -> zhlist G (suc (n1 + n2))
 
 -- One of those such lists plus a G at the head
 data gzh (G : Set) : ℕ -> Set where
@@ -178,10 +183,10 @@ zhconcat .(suc (n1 + n3)) n2 (zhcons n1 n3 x zh1) zh2 =
 -- The output of the φ function
 data φres (G : Set) : ℕ -> Set where
  φr-vert : {n : ℕ} -> zhlist G n -> G -> φres G n
- φr-nonisth : {n1 n2 : ℕ} -> zhlist G n1 -> map (opt G) n2 -> opt (nichoice n2) -> φres G (suc (n2 + n1))
+ φr-nonisth : {n1 n2 : ℕ} -> zhlist G n1 -> map (Opt G) n2 -> Opt (nichoice n2) -> φres G (suc (n2 + n1))
  φr-underflow : φres G zero
 
-φ : {G : Set} -> {n1 n2 : ℕ} -> map (opt G) n1 -> zhlist G n2 -> φres G (n1 + n2)
+φ : {G : Set} -> {n1 n2 : ℕ} -> map (Opt G) n1 -> zhlist G n2 -> φres G (n1 + n2)
 φ (vert (some g)) s = φr-vert s g
 φ (vert none) zhnil = φr-underflow
 φ (vert none) (zhcons _ _ h s) = φr-nonisth s h none
@@ -201,8 +206,8 @@ data τres (G : Set) (Q : ℕ -> Set) : ℕ -> Set where
 This case is the trickiest of this function. We have
 g   : .G
 x   : zhlist .G .n1
-y   : map (opt .G) .n3
-z   : opt (nichoice .n3)
+y   : map (Opt .G) .n3
+z   : Opt (nichoice .n3)
 s   : zhlist .G .n2
 
 and in
@@ -213,7 +218,7 @@ we need
 ?4 : bool
 
 The ?2 is built from g, x, y, s.
-The number of choices in z : opt (nichoice .n3) is 2 * n3 + 2,
+The number of choices in z : Opt (nichoice .n3) is 2 * n3 + 2,
 which feeds into the (n3 + 1) branches of ?3, and we siphon off a bool.
 The n1 and n2 branches of ?3 correspond to other ways of constructing the
 list
@@ -223,7 +228,7 @@ x @ [y] @ s
   τr-nonisth (! g (zhconcat (suc (n3 + n1)) n2 (zhcons n3 n1 y x) s))
              (process-choices n1 n2 n3 z)
   where
-  process-choices : (n1 n2 n3 : ℕ) -> opt (nichoice n3) -> nichoice (suc (n3 + n1) + n2)
+  process-choices : (n1 n2 n3 : ℕ) -> Opt (nichoice n3) -> nichoice (suc (n3 + n1) + n2)
   process-choices n1 n2 n3 (some loop) = nonloop here true
   process-choices n1 n2 n3 (some (nonloop ν β)) = nonloop (wait (predelay n2 (postdelay n1 ν))) β
   process-choices n1 n2 n3 none = nonloop here false
@@ -252,13 +257,6 @@ use-τ G n term = make-map G (gzh G) τ n term
 
 ----------------------------------
 
-postulate String : Set
-{-# BUILTIN STRING String #-}
-
-data List (A : Set) : Set where
-  []   : List A
-  _,_ : A → List A → List A
-infixr 5 _,_
 
 {- don't need this yet -}
 -- data Kv (A B : Set) : Set where
