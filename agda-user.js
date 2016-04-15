@@ -43,20 +43,26 @@ function cvt_bare(x) {
 }
 
 function ap(lt, rt) {
-  return {tp: "app", lt: lt, rt: rt};
+  return {type: "app", L: lt, R: rt};
 }
 
 function vr(n) {
-  return {tp: "var", n: n};
+  return {type: "var", db: n};
 }
 
 function mk_term(t) {
-  if (t.tp == "app") {
-    return ag.BareTerm.bapp(mk_term(t.lt))(mk_term(t.rt));
+  if (t.type == "app") {
+    return ag.BareTerm.bapp(mk_term(t.L))(mk_term(t.R));
   }
-  if (t.tp == "var")
-    return ag.BareTerm.bhead(mk_nat(t.n));
+  if (t.type == "var")
+    return ag.BareTerm.bhead(mk_nat(t.db));
 }
 
-var bare = mk_term(ap(vr(0), vr(0)));
-console.log(cvt_json(ag.json_of_bare(bare)));
+function go() {
+  var bare = ap(vr(0), ap(vr(0), ap(vr(2), vr(0))));
+  console.log(cvt_json(ag.json_of_bare(mk_term(bare))));
+}
+
+module.exports.map_of_term = function(bare) {
+  return cvt_json(ag.json_of_bare(mk_term(bare)));
+}

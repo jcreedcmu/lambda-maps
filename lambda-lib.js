@@ -227,10 +227,12 @@ function estring(s) {
 
 
 function traverse(s, f) {
-  if (s.type == "var") { return f.vor(s); }
+  if (s.type == "var") { return f.vor(s, s.db); }
   if (s.type == "lam") { return f.lam(traverse(s.B, f), s) }
   if (s.type == "app") { return f.app(traverse(s.L, f), traverse(s.R, f), s); }
 }
+
+module.exports.traverse = traverse;
 
 function nstring(s) {
   return traverse(s, {
@@ -358,15 +360,26 @@ function linear_subset() {
   return {a:count_atom,s:count_spine,n:count_norm,x:count_subnorm};
 }
 
-// var f = linear_subset().x;
-// //console.log(linear_subset().n(2,1));
-// //console.log(linear_subset().n(1,2));
 
-// console.log(linear_subset().s(0,2));
-// //console.log(linear_subset().s(1,1));
+// enumerating atomic linear terms in local-exchange-quotient representation
+// R ::= x | R (\x.R)
+// n = # applications, k = # free vars
+var cc_le_atom = memoize2(c_le_atom);
+function c_le_atom(n, k) {
+  var rv = [];
+  if (n < 0) return rv;
+  if (n == 0) {
+    for (var i = 0; i < k; i++) {
+      rv.push({type: "var", db: i});
+    }
+    return rv;
+  }
 
-// if (0) {
-//   for (var i = 0; i < 12; i++) {
-// 	 console.log(f(i, 0));
-//   }
-// }
+  for (var a = 0; a < n; a++) {
+	 var ex = prod(cc_le_atom(a, k), cc_le_atom(n - 1 - a, k + 1));
+	 rv = rv.concat( ex );
+  }
+  return rv;
+}
+
+module.exports.c_le_atom = cc_le_atom;
