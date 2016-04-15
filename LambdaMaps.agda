@@ -1,5 +1,7 @@
 module LambdaMaps where
 
+open import Agda.Primitive
+
 {------------------------------------
  Basic standard library stuff I'm
  copy-pasting here for simpler js output
@@ -19,9 +21,12 @@ data _≤_ (m : ℕ) : ℕ → Set where
 _<_ : ℕ → ℕ → Set
 m < n = suc m ≤ n
 
-data Opt (A : Set) : Set where
+data Opt {ℓ : Level} (A : Set ℓ) : Set ℓ where
   some : A -> Opt A
   none : Opt A
+
+data Σ {ℓ1 ℓ2 : Level} (A : Set ℓ1) (B : A → Set ℓ2) : Set (ℓ1 ⊔ ℓ2) where
+ σ : (a : A) (b : B a) -> Σ A B
 
 data Bool : Set where
  true : Bool
@@ -142,9 +147,9 @@ data Map (G : Set) : ℕ -> Set where
  ------------------------------------}
 
 -- Term G m contains terms with free variables of type G and m applications
-data Term : (G : Set) -> ℕ -> Set₁ where
- head : {G : Set} -> G -> Term G zero
- app : {G : Set} -> {m1 m2 : ℕ} -> Term G m1 -> Term (Opt G) m2 -> Term G (suc (m2 + m1))
+data Term {ℓ : Level} : (G : Set ℓ) -> ℕ -> Set (lsuc ℓ) where
+ head : {G : Set ℓ} -> G -> Term G zero
+ app : {G : Set ℓ} -> {m1 m2 : ℕ} -> Term G m1 -> Term (Opt G) m2 -> Term G (suc (m2 + m1))
 
 {------------------------------------
  Auxiliary datastructures and defns for converting terms to maps
@@ -343,6 +348,57 @@ choiceopt n (wait χ) = some χ
 term_of_raw : {n : ℕ} (t : RawTerm n) -> Term (Choice n) (apps_of_raw t)
 term_of_raw (rhead x) = head x
 term_of_raw (rapp t1 t2) = app (term_of_raw t1) (term_map (choiceopt _) (term_of_raw t2))
+
+data BareTerm : Set where
+ bhead : ℕ → BareTerm
+ bapp : BareTerm → BareTerm → BareTerm
+
+mk_choice : (n : ℕ) -> ℕ -> Opt(Choice n)
+mk_choice (suc n) (suc m) = opt_map wait (mk_choice n m)
+mk_choice (suc zero) zero = some here
+mk_choice z m = none
+
+raw_of_bare : (n : ℕ) -> BareTerm -> Opt (RawTerm n)
+raw_of_bare n (bhead db) with mk_choice n db
+... | none = none
+... | some x = some (rhead x)
+raw_of_bare n (bapp hd tl) with raw_of_bare n hd | raw_of_bare (suc n) tl
+... | none | _ = none
+... | some _ | none = none
+... | some hh | some tt = some (rapp hh tt)
+
+-- _>>_ : {A : Set} {B C : A → Set} {y : A} -> Opt (B y) -> ({x : A} -> B x -> C x) -> Opt (C y)
+-- none >> f = none
+-- (some x) >> f = some (f x)
+
+_>>_ : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B : Set ℓ2} -> Opt A -> (A -> B) -> Opt B
+none >> f = none
+(some x) >> f = some (f x)
+infixl 5 _>>_
+
+_!>_ : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B : A → Set ℓ2} -> Opt A -> ((x : A) -> B x) -> Opt (Σ A B)
+none !> f = none
+(some x) !> f = some (σ x (f x))
+infixl 5 _!>_
+
+map_π₂ : {ℓ1 ℓ2 : Level} {A : Set ℓ1} {B C : A → Set ℓ2} -> ({x : A} -> B x -> C x) -> Σ A B -> Σ A C
+map_π₂ f (σ x y) = σ x (f y)
+
+unitchoice : Choice (suc zero) -> Unit
+unitchoice here = •
+unitchoice (wait ())
+
+
+term_of_bare : BareTerm -> Opt (Σ (RawTerm (suc zero)) (λ z → Term Unit (apps_of_raw z)))
+term_of_bare b = term_pkg
+  where
+  term_pkg = raw_of_bare (suc zero) b
+                   !> term_of_raw
+                   >> map_π₂ (term_map unitchoice)
+
+foo : Σ (RawTerm (suc zero)) (λ z → Term Unit (apps_of_raw z))
+ -> Σ ℕ (λ z → Term Unit z)
+foo (σ rt t) = σ (apps_of_raw rt) t
 
 {------------------------------------
  Examples

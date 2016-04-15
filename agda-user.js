@@ -5,7 +5,7 @@ var s = nat.suc;
 
 var three = s(s(s(z)));
 
-function make_nat(x) {
+function mk_nat(x) {
   var rv = nat.zero;
   for (var i = 0; i < x; i++) {
     rv = nat.suc(rv);
@@ -35,8 +35,8 @@ function cvt_json(x) {
   });
 }
 
-console.log(JSON.stringify(cvt_json(ag.Foo["example1"])));
-console.log(JSON.stringify(cvt_json(ag.Foo["example2"])));
+// console.log(JSON.stringify(cvt_json(ag.Foo["example1"])));
+// console.log(JSON.stringify(cvt_json(ag.Foo["example2"])));
 
 function ap(lt, rt) {
   return {tp: "app", lt: lt, rt: rt};
@@ -46,21 +46,12 @@ function vr(n) {
   return {tp: "var", n: n};
 }
 
-// n is an agda ℕ
-// m is a javascript integer
-function mk_choice(n, m) {
-  var jn = cvt_nat(n);
-  return "what"
-}
-
 function mk_term(t) {
-  function aux(t, n) {
-    if (t.tp == "app")
-      return ag.RawTerm.rapp(n, aux(t.lt, n), aux(t.rt, nat.suc(n)));
-    if (t.tp == "var")
-      return ag.RawTerm.rhead(n, mk_choice(n, t.n));
-  }
-  return aux(t, make_nat(1));
+  if (t.tp == "app")
+    return ag.BareTerm.bapp(mk_term(t.lt), mk_term(t.rt));
+  if (t.tp == "var")
+    return ag.BareTerm.bhead(mk_nat(t.n));
 }
 
-console.log(cvt_nat(make_nat(5)));
+var bare = mk_term(ap(vr(0), vr(0)));
+console.log(cvt_json(ag.json_of_bare(bar)));
