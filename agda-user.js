@@ -1,4 +1,4 @@
-var ag = require('./jAgda.LambdaMaps')
+var ag = require('./LambdaMaps-agda')
 var nat = ag["ℕ"];
 var z = nat.zero;
 var s = nat.suc;
@@ -35,8 +35,12 @@ function cvt_json(x) {
   });
 }
 
-// console.log(JSON.stringify(cvt_json(ag.Foo["example1"])));
-// console.log(JSON.stringify(cvt_json(ag.Foo["example2"])));
+function cvt_bare(x) {
+  return x({
+    "bhead": function(x) { return cvt_nat(x) },
+    "bapp" : function(x1, x2) { return cvt_bare(x1) + "(" + cvt_bare(x2) + ")"},
+  });
+}
 
 function ap(lt, rt) {
   return {tp: "app", lt: lt, rt: rt};
@@ -47,11 +51,12 @@ function vr(n) {
 }
 
 function mk_term(t) {
-  if (t.tp == "app")
-    return ag.BareTerm.bapp(mk_term(t.lt), mk_term(t.rt));
+  if (t.tp == "app") {
+    return ag.BareTerm.bapp(mk_term(t.lt))(mk_term(t.rt));
+  }
   if (t.tp == "var")
     return ag.BareTerm.bhead(mk_nat(t.n));
 }
 
-var bare = mk_term(ap(vr(0), vr(0)));
-console.log(cvt_json(ag.json_of_bare(bar)));
+var bare = mk_term(ap(vr(0), vr(1)));
+console.log(cvt_json(ag.json_of_bare(bare)));
