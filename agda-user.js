@@ -58,5 +58,5 @@ function mk_term(t) {
     return ag.BareTerm.bhead(mk_nat(t.n));
 }
 
-var bare = mk_term(ap(vr(0), vr(1)));
+var bare = mk_term(ap(vr(0), vr(0)));
 console.log(cvt_json(ag.json_of_bare(bare)));
