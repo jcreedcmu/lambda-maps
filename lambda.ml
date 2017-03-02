@@ -1,4 +1,5 @@
 #require "yojson";;
+#require "str";;
 open Yojson;;
 
 type lam_info = LITop | LIMid
@@ -100,8 +101,6 @@ let rec bridgeless free lam =
   in
   let apps = List.map (fun (x, y) -> App(x, y)) branches in
   vars @ lams @ apps
-
-
 
 (* ----------------------------------- *)
 (* Type Inference *)
@@ -394,15 +393,16 @@ let spos = " \\u27ff "
 let neg = " \\u21a3 "
  *)
 
+type loc = LLeft | LRight | LTop
 let string_of_term_tree tree  =
   let parenize b x = if b then "(" ^ x ^ ")" else x in
-  let rec go t paren_arrow = match t with
+  let rec go t ll = match t with
     | Leaf s -> s
-    | Bin("lam", lt, rt) -> parenize paren_arrow (lambda ^ go lt false ^ "." ^ go rt false)
-    | Bin("slam", lt, rt) -> parenize paren_arrow (slambda ^ go lt false ^ "." ^ go rt false)
-    | Bin("app", lt, rt) -> parenize paren_arrow (go lt false ^ " " ^ go rt true)
+    | Bin("lam", lt, rt) -> parenize (ll != LTop) (lambda ^ go lt LTop ^ "." ^ go rt LTop)
+    | Bin("slam", lt, rt) -> parenize (ll != LTop) (slambda ^ go lt LTop ^ "." ^ go rt LTop)
+    | Bin("app", lt, rt) -> parenize (ll = LRight) (go lt LLeft ^ " " ^ go rt LRight)
   in
-  go (tree_map term_namer (normalize_tree tree)) false
+  go (tree_map term_namer (normalize_tree tree)) LTop
 
 let string_of_type_tree tree  =
   let parenize b x = if b then "(" ^ x ^ ")" else x in
@@ -499,6 +499,14 @@ let json_of_var_dir vd = `String (match vd with
 (* ----------------------------------- *)
 (* Main program *)
 (* ----------------------------------- *)
+
+let data_of_bridgeless n =
+  List.map
+    (fun x ->
+      let s = string_of_term_tree(tree_of_term x) in
+      Str.global_replace (Str.regexp "\\./") "" s)
+    (bridgeless [] n);;
+
 
 let enum_ordered = enumerator left_extend list_splits
 let enum_linear = enumerator left_extend linear_splits
