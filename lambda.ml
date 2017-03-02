@@ -17,6 +17,13 @@ let splits n f =
   in
   go n
 
+(*
+list_splits [3;4;5] (fun (a, b) -> [(a, b)])
+= [([], [3; 4; 5]); ([3], [4; 5]); ([3; 4], [5]); ([3; 4; 5], [])]
+
+list_splits [3;4;5] (fun (a, b) -> [List.length a; List.length b])
+= [0; 3; 1; 2; 2; 1; 3; 0]
+ *)
 let list_splits xs f =
   let rec go us_rev vs = f (List.rev us_rev, vs) @ (
       match vs with
@@ -69,6 +76,7 @@ let right_extend free =
 
 let left_extend free =
   0 :: List.map (fun x -> x + 1) free
+
 
 (* ----------------------------------- *)
 (* Type Inference *)
