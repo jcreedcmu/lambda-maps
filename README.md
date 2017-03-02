@@ -11,7 +11,7 @@ Some papers to get you started are:
 
 I wrote some code for visualizing terms and maps which is *very* sketchy. The ocaml code depends on `yojson` which I installed with `opam`. What I run is
 ```
-$ OCAMLFIND_CONF=~/.ocamlfind.conf ocaml
+$ OCAMLFIND_CONF=~/.ocamlfind.conf rlwrap ocaml
 #use "lambda.ml";;
 ```
 with my `~/.ocamlfind.conf` being
