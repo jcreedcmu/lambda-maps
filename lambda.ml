@@ -77,6 +77,31 @@ let right_extend free =
 let left_extend free =
   0 :: List.map (fun x -> x + 1) free
 
+let (--) i j =
+  let rec aux n acc =
+    if n < i then acc else aux (n-1) (n :: acc)
+  in aux j []
+
+(* ordered terms, not necessarily normal, bridgeless/irreducible, i.e. no subterm is closed *)
+let rec bridgeless free lam =
+  let vars = match (free, lam) with
+    | ([x], 0) -> [Var x]
+    | _ -> []
+  in
+  let lams = if lam > 0
+             then List.map (fun x -> Lam(LIMid, x)) (bridgeless (right_extend free) (lam - 1))
+             else [] in
+  let branches =
+    list_splits free (fun (v1, v2) ->
+      if (v1 = []) || (v2 = [])
+      then []
+      else splits lam (fun (l1, l2) ->
+        cross (bridgeless v1 l1) (bridgeless v2 l2)))
+  in
+  let apps = List.map (fun (x, y) -> App(x, y)) branches in
+  vars @ lams @ apps
+
+
 
 (* ----------------------------------- *)
 (* Type Inference *)
@@ -264,6 +289,11 @@ let tree_of_term term =
   in
   let (out, _) = go term [] 0 in
   out
+
+(* let rec tree_of_sterm sterm = match sterm with *)
+(*   | SLam(body) -> Bin("lam", Leaf("*"), tree_of_sterm body) *)
+(*   | SApp(a, b) -> Bin("app", tree_of_sterm a, tree_of_sterm b) *)
+(*   | SVar -> Leaf("*") *)
 
 let rec json_of_tree x = match x with
   | Un (name, bt) ->
