@@ -18,13 +18,80 @@
 \def\bR{{\mathbf R}}
 \def\bL{{\mathbf L}}
 \def\bI{{\mathbf I}}
-%% $$\begin{tabular}{rc@{$\quad ::=\quad$}l}
-%% Types&$A$&$A \rrto B \celse E \rrto A \celse a$\\
-%% Absolutes&$E$&$A \to B $\\
-%% Terms&$M, N$&$\lambda x . M \celse \lambda e . M \celse x \celse M\ M \celse R\cdot M \celse M * R$\\
-%% Aterms&$R$&$\Lambda x . M \celse e  \celse \bI \celse \bR \celse \bL\ R\ R \celse \bZ\ R\ R$\\
-%% \end{tabular}$$
 \def\pprov { \prov\!\!\!\prov }
+\def\tto{}
+$$
+\D \qquad =\qquad
+\begin{prooftree}
+\[
+\[
+\[ \justifies a : A \tto Q \]
+\[
+\[ \justifies b : B \tto A \]
+\[
+\[ \justifies u : Z \tto B \]
+\[
+\justifies
+z : Z
+\]
+\justifies
+u : Z\tto B, z : Z \prov uz : B
+\]
+\justifies
+b, u : Z\tto B, z : Z \prov [buz] : A
+\]
+\justifies
+a, b , u, z  \prov [abuz] : Q
+\]
+\justifies
+a, b  \prov \lambda uz. [abuz] : (Z \tto B) \tto Z\tto Q
+\]
+\[
+\justifies
+ y : Z\tto B
+\]
+\justifies
+a, b, y  \prov   (\lambda uz. [abuz]) y : Z\tto Q
+\end{prooftree}
+$$
+$$
+\erule
+{
+\[
+\[
+\justifies
+n : ((Z \tto B) \tto P) \tto R
+\]
+\[
+\[
+\[
+\justifies
+x : (Z\tto Q)\tto P
+\]
+\quad
+\[ \D\justifies A \tto Q, B\tto A, Z\tto B \prov  Z\tto Q\]
+\justifies
+x , a, b, y \prov  x ((\lambda uz. [abuz]) y) : P
+\]
+\justifies
+x, a, b \prov \lambda y . x ((\lambda uz. [abuz]) y) : (Z \tto B) \tto P
+\]
+\justifies
+n, x, a, b \prov n (\lambda y . x ((\lambda uz. [abuz]) y)) : R
+\]
+}
+{n : ((Z \tto B) \tto P) \tto R \prov \lambda xab.n (\lambda y . x ((\lambda uz. [abuz]) y)) : ((Z\tto Q)\tto P) \tto (A \tto Q) \tto (B\tto A) \tto R}
+$$
+\end{document}
+
+
+
+
+
+
+
+
+
 \subsection{Combinatorial rules}
 $$
 \erule
