@@ -323,7 +323,7 @@ R(n+1) = v * Ln
 
 I can get these lists by doing things like:
 (info_of 6).challenges |> map snd |> List.sort String.compare |> uniq;;
-
+ (info_of 6).challenges |> List.sort (fun a b -> String.compare (snd a) (snd b));;
  *)
 type info = {
     maxes: int list;
