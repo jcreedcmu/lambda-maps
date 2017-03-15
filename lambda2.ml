@@ -199,6 +199,9 @@ let _ = if false
 (*              |> List.hd *)
 
 type tree = TLeaf | TNode of tree * tree
+let rec string_of_tree t = match t with
+  | TLeaf -> "*"
+  | TNode (t1, t2) -> "[" ^ string_of_tree t1 ^ string_of_tree t2 ^ "]"
 
 (* enumerate all the trees with n internal nodes *)
 let rec enum_trees n =
@@ -294,24 +297,29 @@ Conjecture 2: the length of colorings_for_min is 2 * n + 4
 Conjecture 3: the colorings in this set all occur exactly twice, due to vertical flip symmetry,
 and the n + 2 distinct colorings are
 (for odd n)
-1211111 ... 1
-1 ... 1111121
+1211111 ... 1  Ln <-> v * L(n-1)
+1 ... 1111121  Rn <-> R(n-1) * v
 
-1020 ... 0000
-01020 ... 000
+1020 ... 0000  v * L(n-1) <-> R1 * L(n-2)
+01020 ... 000  R1 * L(n-2) <-> R2 * L(n-3)
 ...
-0000 ... 0102
-1000 ... 0002
+0000 ... 0102  R(n-1) * v <-> R(n-2) * L1
+1000 ... 0002  Rn <-> Ln
 
 (for even n)
-1011111 ... 1
-1 ... 1111101
+1011111 ... 1 Ln <-> v * L(n-1)
+1 ... 1111101 Rn <-> R(n-1) * v
 
-1010 ... 0000
-01010 ... 000
+1010 ... 0000 v * L(n-1) <-> R1 * L(n-2)
+01010 ... 000 R1 * L(n-2) <-> R2 * L(n-3)
 ...
-0000 ... 0101
-1000 ... 0001
+0000 ... 0101 R(n-1) * v <-> R(n-2) * L1
+1000 ... 0001 Rn <-> Ln
+
+where
+L0 = R0 = v
+L(n+1) = Ln * v
+R(n+1) = v * Ln
 
 I can get these lists by doing things like:
 (info_of 6).challenges |> map snd |> List.sort String.compare |> uniq;;
@@ -321,7 +329,7 @@ type info = {
     maxes: int list;
     colorings_for_min: (int * int) list;
     length: int;
-    challenges: ((tree * tree) * string) list;
+    challenges: ((string * string) * string) list;
   }
 
 let info_of nnn =
@@ -338,7 +346,8 @@ let info_of nnn =
   let challenges = cross kcen kcen
                    |> map (fun ((t1, cngs1), (t2, cngs2)) -> ((t1, t2), intersection cngs1 cngs2))
                    |> ofilter (fun ((t1, t2), cngs) -> match cngs with [x] -> Some ((t1, t2), x) | _ -> None)
-                   |> filter (fun ((t1, t2), cng) -> List.assoc cng counts = min_of_maxes) in
+                   |> filter (fun ((t1, t2), cng) -> List.assoc cng counts = min_of_maxes)
+                   |> map (fun ((t1, t2), cng) -> ((string_of_tree t1, string_of_tree t2), cng)) in
   {maxes=maxes; colorings_for_min=colorings_for_min; length=List.length colorings_for_min; challenges=challenges}
 
 
