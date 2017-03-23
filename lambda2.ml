@@ -365,3 +365,44 @@ cat data.json | jq 'reduce .[][] as $x ({}; . as $old | . + {($x): (($old[$x] //
 
  cat data.json | jq -r 'reduce .[][] as $x ({}; . as $old | . + {($x): (($old[$x] // 0) + 1)} ) | to_entries | sort_by(.value) | .[]|.key + " " +(.value |tostring)'
  *)
+
+
+(********* At this point begin functions for computing the set of possibile abilities of planar terms ******)
+
+module type ABILITY =
+sig
+type ability = Ab of color list list
+val top : ability
+val s1 : ability
+val s2 : ability
+val ab_lam : ability -> ability
+val (@$) : ability -> ability -> ability
+end
+
+module Ability : ABILITY =
+struct
+type ability = Ab of color list list
+
+
+let ab_lamw1 omega cng = match cng with
+  | h::tl -> if h = omega then Some (tl |> map (fun c -> plus c h)) else None
+  | [] -> raise (Match_failure ("ab_lamw1", 0, 0))
+
+let normalize (Ab cngs) = Ab(cngs |> List.sort (lex_cmp color_cmp) |> uniq)
+
+let filter_some xs = xs |> map (function None -> [] | Some x -> [x]) |> List.flatten
+let ab_lamw omega (Ab cngs) = Ab (cngs |> map (ab_lamw1 omega) |> filter_some)
+let (@@) (Ab cngs1) (Ab cngs2) = Ab (cngs1 @ cngs2)
+let ab_lam ab = normalize (ab_lamw C1 ab @@ ab_lamw C2 ab)
+
+
+let ab_watw1 omega (cng1, cng2) = (map (plus (copp omega)) cng1) @ (map (plus omega) cng2)
+let ab_watw omega (Ab cngs1) (Ab cngs2) = Ab (cross cngs1 cngs2 |> map (ab_watw1 omega))
+let (@$) ab1 ab2 = normalize(ab_watw C1 ab1 ab2 @@ ab_watw C2 ab1 ab2)
+
+let top : ability = Ab []
+let s1 : ability = Ab [[C0]]
+let s2 : ability = s1 @$ s1
+end
+
+open Ability;;
