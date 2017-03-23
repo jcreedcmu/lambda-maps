@@ -15,89 +15,51 @@
 \section{Basics}
 
 An {\em $n$-coloring} $C$ is a ternary string of length $n$, e.g. $\qq{100201}$.
-An {\em $n$-property} $P$ is a formal disjunction of $n$-colorings $C_1 \lor \cdots \lor C_m$.
-An {\em $n$-schema} $S$ is a formal conjunction of $n$-properties $P_1 \land \cdots \land P_m$.
+An {\em $n$-ability} $B$ is a formal conjunction of $n$-colorings $C_1
+\land \cdots \land C_m$, including the possibility of the 0-ary such
+conjunction $\top$.
+
+% An {\em $n$-schema} $S$ is a formal disjunction of $n$-abilities $B_1 \lor \cdots \lor B_m$.
 
 Am using $\omega$ to mean either 1 or 2, and $\bar \omega = 3 - \omega$.
 $$\erule {}{x:0 \prov x}
 \qquad \erule {x:\omega,\ \bar \omega\Gamma\prov N}{\Gamma \prov \lambda x . N}
 \qquad \erule {\Gamma \prov R \qquad \Delta \prov N}{\bar\omega\Gamma, \omega\Delta \prov R\ N}$$
 
-$$
-\erule{x_1:c_1,\ldots, x_n:c_n \prov N}{N \models c_1\cdots c_n}
-\qquad
-\erule{N \models C_i}{N \models C_1 \lor \ldots \lor C_m}
-\qquad
-\erule{ \forall i (N \models P_i)}{N \models P_1 \land \ldots \land P_m}
-$$
+%% $$
+%% \erule{x_1:c_1,\ldots, x_n:c_n \prov N}{N \models c_1\cdots c_n}
+%% \qquad
+%% \erule{N \models C_i}{N \models C_1 \land \ldots \land C_m}
+%% \qquad
+%% \erule{ \forall i (N \models P_i)}{N \models P_1 \lor \ldots \lor P_m}
+%% $$
 
-\section{Schema operations}
-Define
-$$\lambda_\omega (P_1 \land \cdots \land P_m) = \lambda_\omega P_1 \land \cdots \land \lambda_\omega P_m$$
-$$\lambda_\omega (C_1 \lor \cdots \lor C_m) = \lambda_\omega C_1 \lor \cdots \lor \lambda_\omega C_m$$
+\section{Operations}
+We define some operations on abilities.
+If $B$ is an $(n+1)$-ability, $\lambda_\omega B$ is an $n$-ability.
+If $B_1$ is an $n_1$-ability and $B_2$ is an $n_2$-ability, then
+$B_1\wat_\omega B_2$ is an $n_1+n_2$-ability. They are defined as follows.
+$$\lambda_\omega \left(\bigwedge_{i=1}^m C_i\right)  = \bigwedge_{i=1}^m \lambda_\omega C_i $$
 $$\lambda_\omega (\omega c_1 \cdots c_m) = \omega(c_1 \cdots c_m)$$
 $$\lambda_\omega (\omega' c_1 \cdots c_m) = \top \qquad\hbox {(if $\omega \ne \omega'$)}$$
 
-$$C \wat_\omega (A \land B)   =  (C \wat_\omega A  ) \land (C \wat_\omega B) $$
-$$C \wat_\omega (A \lor B)   =  (C \wat_\omega A) \lor (C \wat_\omega B) $$
-$$(A \land B) \wat_\omega C =  (A \wat_\omega C) \land (B \wat_\omega C) $$
-$$(A \lor B) \wat_\omega C =  (A \wat_\omega C) \lor (B \wat_\omega C) $$
+
+$$\left(\bigwedge_{i=1}^m C_i\right) \wat_\omega \left(\bigwedge_{j=1}^\ell C_j\right) = \bigwedge_{i=1}^m \bigwedge_{j=1}^\ell C_i \wat_\omega C_j$$
 $$c_1\cdots c_n \wat_\omega d_1 \cdots d_m = (\bar\omega(c_1\cdots c_n))  (\omega(d_1 \cdots d_m))$$
 
-$$S_1 \prov S_2$$ defined in probably the only sensible possible way, given that $c_1\cdots c_n \prov c_1\cdots c_n$.
-\begin{lemma}
-If $N \models S$, then $\lambda x . N \models \lambda_\omega S$.
-\end{lemma}
-\begin{lemma}
-If $R \models T$ and $N \models S$, then $R\ N \models T \wat_\omega S$.
-\end{lemma}
-\begin{lemma}
-If $N \models S_1$ and $S_1 \prov S_2$, then $N\models S_2$.
-\end{lemma}
+We can also make some alternate versions of these operations that abstract over the $\omega$ involved:
+$$\lambda B = \lambda_1 B \land \lambda_2 B$$
+$$ B_1 \wat B_2 = (B_1 \wat_1 B_2) \land (B_1 \wat_2 B_2)$$
 
+Now for every term $M$ with $n$ free variables we can define $M^*$, the $n$-ability of $M$.
+$$(\lambda x . M)^* = \lambda (M^*)$$
+$$(M_1\ M_2)^* = M_1^* \wat M_2^*$$
+$$x^* = \qq 0$$
 
-% \vfil\eject
+\begin{conjecture}
+There is no term $M$ such that $M^* = \top$.
+\end{conjecture}
 
-A {\em schema sequence} is a sequence $\bar S = (S_n)_{n=1}^\infty$ such that
-%% $$S_1 = \qq 0$$
-%% $$S_2 = \qq {12} \land \qq {21}$$
-%% $$S_3 = \qq{101} \land \qq{202} \land (\qq {110} \lor \qq {011}) \land (\qq {220} \lor \qq {022})$$
-%% $$S_3 = (\qq{101} \land \qq{011} \land \qq{202} \land \qq{022}) \lor (\qq{101} \land \qq{110} \land \qq{202} \land \qq{220})$$
-
-
-
-\begin{enumerate}
-\item $S_1 = \qq 0$.
-\item $(\lambda_1 S_{n+1}) \land (\lambda_2 S_{n+1}) \prov S_n$ for every $n \ge 1$.
-\item $(S_{m} \wat_1 S_{n}) \land (S_{m} \wat_2 S_{n}) \prov S_{m+n}$ for every $m,n \ge 1$.
-\end{enumerate}
-
-\section{Results}
-\begin{theorem}
-If $\bar S$ is a schema sequence, then every term $N$ with $n$ free variables has $N \models S_n$.
-\end{theorem}
-
-\begin{proof}
-By induction on the structure of $N$.
-\begin{itemize}
-\item[Case:] $N = \lambda x . N_0$. By induction hypothesis, $N_0 \models S_{n+1}$, hence
-$$\lambda x .  N_0 \models \lambda_1 S_{n+1} \land \lambda_2 S_{n+1}$$
-Then since $(\lambda_1 S_{n+1}) \land (\lambda_2 S_{n+1}) \prov S_n$ by assumption that $\bar S$ is a schema sequence, we have
- $\lambda x . N_0 \models  S_n$
-\item[Case:] $N = N_1\ N_2$. By induction hypothesis, $N_1 \models S_{n_1}$ and $N_2 \models S_{n_2}$ according
-to however they divide up the $n_1 + n_2 = n$ free variables in play. Hence $$ N_1\ N_2 \models (S_{n_1} \wat_1 S_{n_2}) \land
-(S_{n_1} \wat_2 S_{n_2})$$
-Then since $(S_{n_1} \wat_1 S_{n_2}) \land (S_{n_1} \wat_2 S_{n_2}) \prov S_{n_1+n_2}$
- by assumption that $\bar S$ is a schema sequence, we have
- $N_1\ N_2 \models S_n$
-\item[Case:] $N = x$. Easy to see that $N \models \qq 0 = S_0$ in this case, because $x : 0 \prov x$.
-\end{itemize}
-\cqed
-\end{proof}
-
-\begin{corollary}
-If there exists a schema sequence, then every planar map is 4-colorable.
-\end{corollary}
 
 \end{document}
 
