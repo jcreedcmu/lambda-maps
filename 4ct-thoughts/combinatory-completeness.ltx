@@ -23,12 +23,61 @@
 
 \begin{document}
 
+\subsection{Chiral lambda calculus rules}
 
+A context looks like $\Gamma = x_1 : A_1^{\chi_1}, \ldots, x_n : A_n^{\chi_n}$.
+Variable declarations in a context are annotated with an element from
+$$\hbox{Chiralities }\chi ::= 1\celse u \celse v$ thought of as 3rd
+roots of unity. We use juxtaposition to denote the evident
+commutative, associative binary operator on them derived from
+multiplication of roots: $1  \chi = \chi$, $u  u = v$,
+$v  v = u$, $u v = 1$. Write $\Gamma^\chi$ for pointwise
+multiplication of annotations, i.e.
+$$\Gamma^\chi = x_1 : A_1^{\chi_1\chi}, \ldots, x_n : A_n^{\chi_n\chi}$$
+We write $\bar \chi$ for the multiplicative inverse: $\bar 1 = 1$, $\bar u = v$, $\bar v = u$.
+
+In a context, an omitted annotation abbreviates an annotation of 1.
+$$
+\erule
+{}
+{x : A^1 \prov x : A }
+\qquad
+\erule
+{\Omega_1 \prov M : A \rrto^\chi B \qquad \Omega_2 \prov N : A}
+{\Omega_1^{\bar \chi}, \Omega_2^{ \chi} \prov  M\ N :  B}
+\qquad
+\erule
+{\Omega^{\bar \chi}, x : A^\chi \prov  M : B}
+{\Omega \prov \lambda x . M : A \rrto^\chi B}
+$$
+
+\begin{lemma}[Substitution]
+If $\Omega \prov N : A$ and $\Omega_1, x:A^\chi, \Omega_2 \prov M : B$, then
+$\Omega_1, \Omega^\chi, \Omega_2 \prov [N/x]M : B$.
+\end{lemma}
+
+
+
+We observe the system satisfies a local soundness principle for $\beta$-reduction:
+$$
+\erule
+{
+\[
+\Omega_1^{\bar \chi}, x : A^\chi \prov  M : B
+\justifies
+\Omega_1 \prov \lambda x . M : A \rrto^\chi B
+\]
+\qquad \Omega_2 \prov N : A
+}
+{\Omega_1^{\bar \chi}, \Omega_2^{ \chi} \prov  \lambda x.M\ N :  B}
+\quad\mapsto\quad
+\Omega_1^{\bar \chi}, \Omega_2^{ \chi} \prov [N/x] M : B
+$$
 \subsection{Combinatorial rules}
 $$
 \erule
 {x : A_2 \pprov M : A_1\qquad y : B_1 \pprov N : B_2}
-{z : A_1 \rrto B_1 \pprov \lambda x.[z\ M / y]N : A_2 \rrto B_2 }
+{z : A_1 \rrto^\chi B_1 \pprov \lambda x.[z\ M / y]N : A_2 \rrto^\chi B_2 }
 $$
 $$
 \erule
@@ -55,39 +104,23 @@ $$ $$
 {z : A \rrto B_1 \pprov \lambda x.[z\ x / y]N : A \rrto B_2 }
 $$
 
-\subsection{Normal lambda calculus rules}
-
-%$$(\lambda x . M)\ N \mapsto [N/x]M$$
-
-$$
-\erule
-{}
-{x : A \prov x : A }
-\qquad
-\erule
-{\Omega_1 \prov M : A \rrto B \qquad \Omega_2 \prov N : A}
-{\Omega_1, \Omega_2 \prov  M\ N :  B}
-\qquad
-\erule
-{\Omega, x : A \prov  M : B}
-{\Omega \prov \lambda x . M : A \rrto B}
-$$
 \subsection{Result}
-\begin{lemma}
+\begin{lemma}[Context Extension]
 \label{first}
 If $x : A \pprov M : B$, then there exists a term $M'$
 such that
-$$z : \Omega \rrto A \prov M' : \Omega \rrto B$$
+$$z : \Omega \rrto A \pprov M' : \Omega \rrto B$$
 and $M' \mapsto^* \lambda \bar y . [z\ \bar y / x]M$.
 \end{lemma}
 
 \begin{proof}
+XXXXXXXXXXXXXXXXXXXXXX
 By induction on $\Omega$. If $\Omega$ is empty, set $M' = [z/x]M$ and we are done.
-Otherwise $\Omega = Q, \Omega_0$. By i.h. we can find a $M_0'$ such that
+Otherwise $\Omega = Q^\chi, \Omega_0$. By i.h. we can find a $M_0'$ such that
 $$z : \Omega_0 \rrto A \prov M'_0 : \Omega_0 \rrto B$$
 and $M'_0 \mapsto^* \lambda \bar y_0 . [z\ \bar y_0 / x]M$.
 So we can immediately derive
-$$w : Q \rrto \Omega_0 \rrto A \prov \lambda q . [w\ q / z]M'_0 : Q \rrto \Omega_0 \rrto B$$
+$$w : Q \rrto^\chi \Omega_0 \rrto A \prov \lambda q . [w\ q / z]M'_0 : Q \rrto^\chi \Omega_0 \rrto B$$
 and observe $\lambda q . [w\ q / z]M'_0\mapsto^* \lambda q. [w\ q / z] \lambda \bar y_0 . [z\ \bar y_0 / x]M$
 $$\mapsto \lambda q  \bar y_0 . [w\ q\ \bar y_0 / x]M$$
 as required.
