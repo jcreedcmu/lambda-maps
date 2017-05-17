@@ -1,0 +1,207 @@
+\documentclass{article}
+\input{prooftree}
+\usepackage{stmaryrd}
+\input{linear}
+\input{theorem}
+\def\erule#1#2{\begin{prooftree}#1\justifies #2\end{prooftree}}
+\def\lpar{\bindnasrepma}
+\def\lamp{\binampersand}
+\def\bpush{\mathbf{push}}
+\def\dns{{\downarrow}}
+\def\ups{{\uparrow}}
+\def\qq#1{\ulcorner#1\urcorner}
+\def\wat{\mathrel{@}}
+\def\pprov { \prov\!\!\!\prov }
+
+\begin{document}
+
+
+
+
+
+
+
+
+\subsection{Combinatorial rules}
+$$
+\erule
+{x : A_2 \pprov M : A_1\qquad y : B_1 \pprov N : B_2}
+{z : A_1 \rrto B_1 \pprov \lambda x.[z\ M / y]N : A_2 \rrto B_2 }
+$$
+$$
+\erule
+{}
+{x : A \pprov x : A }
+\qquad
+\erule
+{x : A \pprov M : B \qquad y : B \pprov N : C }
+{x : A \pprov [M/y]N : C }
+$$
+$$
+\erule
+{}
+{f : B \rrto C \pprov \lambda ga.f(g\ a) : (A \rrto B) \rrto (A \rrto C) }
+$$
+some derived special cases are
+$$
+\erule
+{x : A_2 \pprov M : A_1}
+{z : A_1 \rrto B \pprov \lambda x.z\ M  : A_2 \rrto B }
+$$ $$
+\erule
+{ y : B_1 \pprov N : B_2}
+{z : A \rrto B_1 \pprov \lambda x.[z\ x / y]N : A \rrto B_2 }
+$$
+
+\subsection{Normal lambda calculus rules}
+
+%$$(\lambda x . M)\ N \mapsto [N/x]M$$
+
+$$
+\erule
+{}
+{x : A \prov x : A }
+\qquad
+\erule
+{\Omega_1 \prov M : A \rrto B \qquad \Omega_2 \prov N : A}
+{\Omega_1, \Omega_2 \prov  M\ N :  B}
+\qquad
+\erule
+{\Omega, x : A \prov  M : B}
+{\Omega \prov \lambda x . M : A \rrto B}
+$$
+\subsection{Result}
+\begin{lemma}
+\label{first}
+If $x : A \pprov M : B$, then there exists a term $M'$
+such that
+$$z : \Omega \rrto A \prov M' : \Omega \rrto B$$
+and $M' \mapsto^* \lambda \bar y . [z\ \bar y / x]M$.
+\end{lemma}
+
+\begin{proof}
+By induction on $\Omega$. If $\Omega$ is empty, set $M' = [z/x]M$ and we are done.
+Otherwise $\Omega = Q, \Omega_0$. By i.h. we can find a $M_0'$ such that
+$$z : \Omega_0 \rrto A \prov M'_0 : \Omega_0 \rrto B$$
+and $M'_0 \mapsto^* \lambda \bar y_0 . [z\ \bar y_0 / x]M$.
+So we can immediately derive
+$$w : Q \rrto \Omega_0 \rrto A \prov \lambda q . [w\ q / z]M'_0 : Q \rrto \Omega_0 \rrto B$$
+and observe $\lambda q . [w\ q / z]M'_0\mapsto^* \lambda q. [w\ q / z] \lambda \bar y_0 . [z\ \bar y_0 / x]M$
+$$\mapsto \lambda q  \bar y_0 . [w\ q\ \bar y_0 / x]M$$
+as required.
+\cqed
+\end{proof}
+
+\begin{lemma}
+\label{second}
+For any $B, C, \Omega$ there exists a term $M$ such that
+$$f : B \rrto C \pprov M : (\Omega \rrto B) \rrto (\Omega \rrto C)$$
+and
+$M \mapsto^* \lambda g . \lambda \bar y . f\ (g\ \bar y)$.
+\end{lemma}
+
+\begin{proof}
+By induction on $\Omega$. If $\Omega$ is empty, set $M = \lambda g. f\ g$.
+Otherwise $\Omega = Q, \Omega_0$ and there exists an $M_0$ such that
+$$f : B \rrto C \pprov M_0 : (\Omega_0  \rrto B) \rrto (\Omega_0  \rrto C)$$
+and
+$M_0 \mapsto^* \lambda g . \lambda \bar y_0 . f\ (g\ \bar y_0)$.
+
+Construct
+$$f : B \rrto C \rrto (\Omega_0  \rrto C) \pprov \lambda hq.M_0\ (h\ q) : (Q \rrto \Omega_0 \rrto  B) \rrto ( Q \rrto \Omega_0 \rrto C)$$
+and observe
+$\lambda hq.M_0\ (h\ q) \mapsto^* \lambda hq.(\lambda g . \lambda \bar y_0 . f\ (g\ \bar y_0))\ (h\ q)$
+$$\mapsto \lambda hq.( \lambda \bar y_0 . f\ (h\ q\ \bar y_0)) $$
+$$= \lambda h. \lambda q\bar y_0 . f\ (h\ q\ \bar y_0) $$
+as required.
+\cqed
+\end{proof}
+\begin{theorem}
+If $x:X, \bar y : \Omega \prov M : A$ then there exists $M'$ such that
+$$x : X \pprov M' : \Omega \rrto A$$
+ and $M' \mapsto^* \lambda \bar y. M$.
+\end{theorem}
+
+\begin{proof}\
+  \begin{itemize}
+  \item[Case:]
+$$\erule
+{}
+{x : A \prov x : A }$$
+In this case $M'$ is $x$ itself.
+  \item[Case:]
+$$
+\erule
+{x: X, \bar y : \Omega, z : A \prov  M : B}
+{x: X, \bar y : \Omega \prov \lambda z . M : A \rrto B}
+$$
+Appeal to the i.h. to get $M'$ that $\mapsto^* \lambda \bar y .\lambda z. M$, which is
+the required output of this case already.
+
+\item[Case:]
+$$\erule
+{x_1: X_1, \bar y_1 : \Omega_1 \prov M : A \rrto B \qquad x_2: X_2, \bar y_2 : \Omega_2 \prov N : A}
+{x_1: X_1, \bar y_1 : \Omega_1, x_2: X_2, \bar y_2 : \Omega_2 \prov  M\ N :  B}$$
+By induction hypothesis I have
+$$x_1: X_1 \pprov M' : \Omega_1 \rrto A \rrto B\qquad M' \mapsto^* \lambda \bar y_1. M$$
+$$x_2: X_2 \pprov N' : \Omega_2 \rrto A \qquad N' \mapsto^* \lambda \bar y_2. N$$
+and I need $P$ such that
+$$x_1: X_1 \pprov P : \Omega_1 \rrto X_2 \rrto \Omega_2 \rrto B \qquad P \mapsto^* \lambda \bar y_1 x_2 \bar y_2. M\ N$$
+%% We're inclined to set $P = \lambda \bar y_1 x_2 \bar y_2 . (M'\ \bar y_1)\ (N'\ \bar y_2)$
+%% but it's not that easy.
+
+
+
+
+By Lemma~\ref{second}, we can find a term $M_1$ such that
+$$t :  A \rrto  B \pprov M_1 :  (\Omega_2 \rrto A) \rrto (\Omega_2 \rrto B)$$
+and
+$M_1 \mapsto^* \lambda g . \lambda \bar y_2 . t\ (g\ \bar y_2)$.
+
+Observe the following derivation:
+$$
+\D\ = \ \erule
+{x_2: X_2 \pprov N' : \Omega_2 \rrto A }
+{s : (\Omega_2 \rrto A) \rrto (\Omega_2 \rrto B) \prov \lambda x_2 . s\ N' :  X_2 \rrto (\Omega_2 \rrto B) }
+$$
+Let's try cutting it against $M_1$. Set $M_2 = [M_1/s](\lambda x_2 . s\ N') = \lambda x_2 . M_1\ N'$.
+By Lemma~\ref{first} we can find an $M_2'$ such that $M_2' \mapsto^* \lambda \bar y_1.[q\ \bar y_1/t]M_2$.
+We can show
+$$
+\erule
+{
+\[
+\justifies
+x_1: X_1 \pprov M' : \Omega_1 \rrto  A \rrto B
+\]
+\[
+\[
+\[
+\justifies
+ t :  A \rrto B \pprov M_1 : (\Omega_2 \rrto A) \rrto (\Omega_2 \rrto B)
+\]
+\qquad \D
+\justifies
+ t :  A \rrto B \pprov M_2 : X_2 \rrto \Omega_2 \rrto B
+\]
+\justifies
+ q : \Omega_1 \rrto A \rrto B \pprov M_2' : \Omega_1 \rrto X_2 \rrto \Omega_2 \rrto B
+\]
+}
+{x_1: X_1 \pprov [M'/q]M_2' : \Omega_1 \rrto X_2 \rrto \Omega_2 \rrto B }
+$$
+What does this reduce to?
+$$[M'/q]M_2' \mapsto^* \lambda \bar y_1.[M'\ \bar y_1/t]M_2$$
+$$\mapsto^* \lambda \bar y_1.[M'\ \bar y_1/t]\lambda x_2 . M_1\ N'$$
+$$\mapsto^* \lambda \bar y_1.[M'\ \bar y_1/t]\lambda x_2 . (\lambda g . \lambda \bar y_2 . t\ (g\ \bar y_2))\ (\lambda \bar y_2. N)$$
+$$\mapsto^* \lambda \bar y_1.[M'\ \bar y_1/t]\lambda x_2 . ( \lambda \bar y_2 . t\ N) $$
+$$\mapsto^* \lambda \bar y_1.\lambda x_2 . ( \lambda \bar y_2 . (M'\ \bar y_1)\ N) $$
+$$\mapsto^* \lambda \bar y_1.\lambda x_2 .  \lambda \bar y_2 . M\ N $$
+as required.
+  \end{itemize}
+\cqed
+\end{proof}
+
+
+
+\end{document}
