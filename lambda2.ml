@@ -406,3 +406,20 @@ let s2 : ability = s1 @$ s1
 end
 
 open Ability;;
+
+let ab_cmp (Ab a) (Ab b) = lex_cmp (lex_cmp color_cmp) a b
+
+exception Nope
+let rec generation = function
+  | 0 -> [[s1]]
+  | 1 -> [[s2]; [s1]]
+  | n -> let old = generation (n-1) in
+         let (prev, others) = (match old with a::b -> (a, b) | [] -> raise Nope) in
+         let lam_colorings = map ab_lam prev in
+         let flat_others = List.flatten others in
+         let app_colorings = (cross prev prev @ cross prev flat_others @ cross flat_others prev)
+                             |> map (fun (x, y) -> x @$ y) in
+         let new_colorings : ability list = lam_colorings @ app_colorings
+                                            |> List.sort ab_cmp |> uniq in
+         let filtered_new_colorings = new_colorings |> filter (fun x -> not (List.mem x flat_others)) in
+         filtered_new_colorings :: old
