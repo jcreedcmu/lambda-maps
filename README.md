@@ -3,12 +3,15 @@
 There's some really cool correspondences between lambda terms and combinatorial maps. Not maps in the sense of mappings --- lambda-terms *are* those, obviously, but maps in the sense of "every planar map can be 4-colored".
 
 I believe the original one describing the relationship is
+
 * [Asymptotics and random sampling for BCI and
 BCK lambda terms](https://dmg.tuwien.ac.at/dgardy/Papers/LogiqueQuantitative/BCI.pdf)
+
 and some other papers I enjoyed reading were:
 * [A correspondence between rooted planar maps and normal planar lambda terms](http://arxiv.org/abs/1408.5028)
 * [Linear lambda terms as invariants of rooted trivalent maps](http://arxiv.org/abs/1512.06751)
 * [Counting isomorphism classes of β-normal linear lambda terms](http://arxiv.org/abs/1509.07596)
+
 ### The code
 
 I wrote some code for visualizing terms and maps which is *very* sketchy. The ocaml code depends on `yojson` which I installed with `opam`. What I run is
